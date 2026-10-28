@@ -2,7 +2,7 @@
 
 ## Why Did I Make This Website?
 
-I created the website PokéSearcher because I often have to go through different pages or websites to find Pokémon stats, moves or sprites. Websites like Serebii and Bulbapedia have a lot of useful information, but it can take quite a few clicks to find the specific thing I need. I wanted to put this information in one place using a simple search bar and easy to use buttons. I also wanted to add a way to compare two Pokémon side by side, so I would not have to keep switching between tabs when comparing stats or building a team (the Pokémon Champions grind to Master Ball is real).
+PokéSearcher was created to help prevent the annoying need to have to go through different pages or websites to find Pokémon stats, moves or sprites. Websites like Serebii and Bulbapedia have a lot of useful information, but it can take quite a few clicks and time to find the specific thing you need. This website was designed to put this information in one place using a simple search bar, tabs and easy-to-use buttons. There is even a way to compare two Pokémon side by side, so yopu don't have to keep switching between tabs when comparing stats or building a team (the Pokémon Champions grind to Master Ball can be tough).
 
 ## Features
 
@@ -58,13 +58,9 @@ The navigation bar lets me switch between the different sections, and the search
 
 <img width="2556" height="1197" alt="image" src="https://github.com/user-attachments/assets/9ef0810b-74b6-4203-8573-78a02eddfd69" />
 
-## AI Disclosure
-
-The code for this project was written with the help of AI, specifically Claude, JimmyGPT and ChatGPT. All art, like the website icon and Poké Ball and Luxury Ball icons, was made by me. 
-
 ## Setup
 
-You will need Python 3.12 or newer installed on your computer and an internet connection to run the application and load information from the APIs. The steps below are for Windows PCs only (Sorry James).
+You will need Python 3.12 or newer installed on your computer and an internet connection to run the application and load information from the APIs. The steps below are for Windows PCs only.
 
 1. Extract the project ZIP and open PowerShell in PyCharm in the folder containing manage.py.
 2. Create and activate a virtual environment:
