@@ -1,6 +1,6 @@
 # PokéSearcher
 
-## Why Did I Make This Website?
+## Why Does This Website Exist?
 
 PokéSearcher was created to help prevent the annoying need to have to go through different pages or websites to find Pokémon stats, moves or sprites. Websites like Serebii and Bulbapedia have a lot of useful information, but it can take quite a few clicks and time to find the specific thing you need. This website was designed to put this information in one place using a simple search bar, tabs and easy-to-use buttons. There is even a way to compare two Pokémon side by side, so yopu don't have to keep switching between tabs when comparing stats or building a team (the Pokémon Champions grind to Master Ball can be tough).
 
