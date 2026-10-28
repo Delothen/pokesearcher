@@ -1,0 +1,53 @@
+{% if not_found %}
+  <p class="empty">
+    No ability found for "{{ q }}".
+  </p>
+{% elif ability %}
+  <article class="pokemon-card">
+    <div class="game-select-row game-fav-row{% if not ability.games %} title-fav-row{% endif %}">
+      {% if ability.games %}
+        <div class="game-buttons" id="game-buttons">
+          {% for g in ability.games %}
+            <button type="button" class="game-btn"
+                    data-vg="{{ g.key }}"
+                    onclick="setAbilityGame(this)">{{ g.label }}</button>
+          {% endfor %}
+        </div>
+      {% else %}
+        <h2 class="pokemon-title">{{ ability.name|capfirst }}</h2>
+      {% endif %}
+      {% include "pokedex/_fav_toggle.html" with cb_id="ability-fav" fav_type="ability" fav_id=ability.name fav_name=ability.name %}
+    </div>
+    {% if ability.games %}<h2 class="pokemon-title">{{ ability.name|capfirst }}</h2>{% endif %}
+    <div class="move-effect-box">
+      <h3>Effect</h3>
+      <p class="move-effect">{{ ability.effect }}</p>
+    </div>
+
+    {% if ability.pokemon %}
+      {% include "pokedex/_mon_table.html" with mons=ability.pokemon title="Pokémon with this ability" show_hidden=True show_games=ability.games %}
+    {% else %}
+      <div class="move-effect-box">
+        <h3>Pokémon with this ability</h3>
+        <p class="move-effect">No Pokémon list available for this ability.</p>
+      </div>
+    {% endif %}
+  </article>
+  {% if ability.games %}
+  <script>
+    function setAbilityGame(btn) {
+      if (window.pksPageMemory) pksPageMemory.set('game', btn.dataset.vg);
+      document.querySelectorAll('#game-buttons .game-btn')
+        .forEach(function(b) { b.classList.toggle('active', b === btn); });
+      window.monGame = btn.dataset.vg;
+      filterMons();
+    }
+    // Default to the most recent game the ability is in.
+    (function() {
+      var btns = document.querySelectorAll('#game-buttons .game-btn');
+      var pick = window.pksPageMemory ? pksPageMemory.pick(btns, 'game') : btns[0];
+      if (pick) setAbilityGame(pick);
+    })();
+  </script>
+  {% endif %}
+{% endif %}

@@ -1,0 +1,183 @@
+{# One side (side = "a" or "b") of a Pokémon comparison: the same Details view as the Pokémon page, without the Game Info and TCG Cards tabs. Every id is prefixed cmp-<side>- so two cards can share a page. #}
+<article class="pokemon-card cmp-card" id="cmp-{{ side }}-card"
+         style="--cmp-rows: 6"
+         data-form-name="{{ p.name }}"
+         data-sprite="{{ p.sprite|default_if_none:'' }}"
+         data-shiny-sprite="{{ p.shiny_sprite|default_if_none:'' }}"
+         data-female-sprite="{{ p.female_sprite|default_if_none:'' }}"
+         data-shiny-female-sprite="{{ p.shiny_female_sprite|default_if_none:'' }}">
+  <section class="cmp-section cmp-controls">
+  <div class="game-select-row has-shiny">
+    {% if p.games or p.forms %}
+    <div class="game-buttons" id="cmp-{{ side }}-games">
+      {% for vg, label in p.games %}
+      <button type="button" class="game-btn{% if vg == p.default_game %} active{% endif %}" data-vg="{{ vg }}"
+              onclick="setCmpGen('{{ side }}', '{{ vg }}')">{{ label }}</button>
+      {% endfor %}
+    </div>
+    {% endif %}
+    <div class="toggle-row">
+      <label class="shiny-toggle">
+        <input type="checkbox" id="cmp-{{ side }}-shiny"
+               onchange="setCmpShiny('{{ side }}', this.checked)">
+        <span class="toggle-text">✨ Shiny</span>
+        <span class="toggle-slider"></span>
+      </label>
+      {# Same id format as the Pokémon page ("name~game|s|f"); the page script keeps it in step with the game / shiny / female / form shown. #}
+      {% with favcb="cmp-"|add:side|add:"-fav" %}
+      {% include "pokedex/_fav_toggle.html" with cb_id=favcb fav_type="pokemon" fav_id=p.name|add:"~default" fav_name=p.name fav_sprite=p.sprite %}
+      {% endwith %}
+    </div>
+  </div>
+  </section>
+
+  <section class="cmp-section cmp-head">
+  <div class="pokemon-top">
+    <div class="pokemon-head">
+      <img class="pokemon-sprite sprite-pending"
+           id="cmp-{{ side }}-sprite"
+           src="{{ p.sprite }}"
+           alt="{{ p.name|capfirst }}">
+      <div class="no-shiny-sprite sprite-pending"
+           id="cmp-{{ side }}-nosprite" hidden>
+        No shiny sprite for this game
+      </div>
+      <div>
+        <div class="pokemon-title-row cmp-title-row">
+          <h2><span id="cmp-{{ side }}-title">{{ p.display_name|default:p.name|capfirst }}</span>
+            <span class="dex">#{{ p.dex_number|default:p.id }}</span>
+          </h2>
+          <div class="form-toggle" id="cmp-{{ side }}-gender" role="group"
+               aria-label="Gender" style="display:none">
+            <button type="button" class="game-btn form-btn gender-btn active"
+                    id="cmp-{{ side }}-gender-male" title="Male" aria-label="Male"
+                    onclick="setCmpFemale('{{ side }}', false)">♂</button>
+            <button type="button" class="game-btn form-btn gender-btn"
+                    id="cmp-{{ side }}-gender-female" title="Female" aria-label="Female"
+                    onclick="setCmpFemale('{{ side }}', true)">♀</button>
+          </div>
+        </div>
+        <div class="types-col">
+          <div class="types" id="cmp-{{ side }}-types">
+            {% for t in p.types %}
+            <span class="type-badge type-{{ t }}">{{ t|capfirst }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% if p.forms %}
+        <div class="form-toggle" id="cmp-{{ side }}-forms"
+             role="group" aria-label="Forms">
+          <span class="form-toggle-label">Form</span>
+          {% for f in p.forms %}
+          <button type="button"
+                  class="game-btn form-btn{% if f.current %} active{% endif %}"
+                  data-idx="{{ forloop.counter0 }}"
+                  onclick="setCmpForm('{{ side }}', {{ forloop.counter0 }})">
+            {{ f.label }}
+          </button>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  </section>
+
+  {% with sid="cmp-"|add:side %}
+  {% with fid=sid|add:"-forms-data" spid=sid|add:"-sprites" shid=sid|add:"-shinies" fsid=sid|add:"-female-sprites" fshid=sid|add:"-shiny-female-sprites" %}
+  {% if p.forms %}{{ p.forms|json_script:fid }}{% endif %}
+  {{ p.sprites_by_gen|json_script:spid }}
+  {{ p.shiny_sprites_by_gen|json_script:shid }}
+  {{ p.female_sprites_by_gen|json_script:fsid }}
+  {{ p.shiny_female_sprites_by_gen|json_script:fshid }}
+  {% endwith %}
+  {% endwith %}
+
+  <section class="cmp-section cmp-stats cmp-stats-col">
+    <h3>Stats <span class="stat-total">(Total: <span id="cmp-{{ side }}-stat-total">{{ p.stat_total }}</span>)</span></h3>
+    <ul class="stats" id="cmp-{{ side }}-stats">
+      {% for s in p.stats %}
+      <li class="stat-{{ s.name }}"><span>{{ s.label }}</span><b>{{ s.value }}</b></li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="cmp-section abilities-section">
+    <h3>Abilities</h3>
+    <p class="empty no-abilities" id="cmp-{{ side }}-no-abilities" hidden>
+      Pokémon in this game have no abilities.
+    </p>
+    <div class="ability-list" id="cmp-{{ side }}-za-passive" style="display:none"></div>
+    <div class="ability-list" id="cmp-{{ side }}-abilities"{% if p.start_no_abilities %} style="display:none"{% endif %}>
+      {% for ab in p.abilities %}
+      <a class="ability-row"
+         href="{% url 'pokedex:abilities' %}?q={{ ab.name|urlencode }}">
+        <span class="ability-name">
+          {{ ab.name|capfirst }}
+          {% if ab.is_hidden %}
+          <span class="hidden-tag">Hidden</span>
+          {% endif %}
+        </span>
+        <span class="ability-effect">
+          {{ ab.effect }}
+        </span>
+      </a>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="cmp-section moves-section">
+    <h3>Moves</h3>
+    <div class="search-wrapper mon-search-wrapper" id="cmp-{{ side }}-move-search-wrapper">
+      <form class="search-form" onsubmit="filterCmpMoves('{{ side }}'); return false;">
+        <input type="text"
+               id="cmp-{{ side }}-move-search"
+               placeholder="Search moves…"
+               autocomplete="off"
+               oninput="filterCmpMoves('{{ side }}')">
+        <button type="submit">Search</button>
+      </form>
+    </div>
+    <div class="moves-list">
+      <table class="moves-table mon-moves" id="cmp-{{ side }}-moves"
+             data-meta-url="{% url 'pokedex:move_meta' %}">
+        <thead>
+          <tr>
+            <th>Move</th>
+            <th>Level</th>
+            <th>Type</th>
+            <th>Cat.</th>
+            <th>Power</th>
+            <th>Acc.</th>
+            <th>Pri.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in p.moves %}
+          <tr class="move-row"
+              data-vg="{{ m.version_group }}"
+              data-name="{{ m.name }}"{% if p.default_game and m.version_group != p.default_game %} style="display:none"{% endif %}>
+            <td>
+              <a class="move-link"
+                 href="{% url 'pokedex:moves' %}?q={{ m.name|urlencode }}">
+                {{ m.name|capfirst }}
+              </a>
+            </td>
+            <td>{{ m.level_label }}</td>
+            <td class="mm-type"></td><td class="mm-cat"></td><td class="mm-power"></td><td class="mm-acc"></td><td class="mm-pri"></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <p class="empty" id="cmp-{{ side }}-no-moves" hidden>
+        No move data for this game.
+      </p>
+    </div>
+  </section>
+
+  <section class="cmp-section type-chart-section">
+    <h3>Type chart</h3>
+    <p class="tc-caption">Damage taken from each attacking type.</p>
+    <div class="tc-grid" id="cmp-{{ side }}-type-chart"></div>
+  </section>
+</article>

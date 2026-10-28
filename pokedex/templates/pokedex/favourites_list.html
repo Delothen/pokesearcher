@@ -1,0 +1,59 @@
+{% load pks_tags %}
+{% for type, items in groups %}
+  <div class="fav-category">
+    <h3>{% if type == 'card' %}TCG cards{% else %}{{ type|capfirst }}{% endif %}</h3>
+    <div class="fav-grid">
+      {% for fav in items %}
+        <div class="fav-item"
+             data-kind="{{ fav.type }}"
+             data-key="{{ fav.type }}|{{ fav.id }}"
+             data-label="{{ fav.name }}"
+             {% if fav.type == 'compare' %}data-mode="{{ fav.id|cmp_mode }}" data-a="{{ fav.id|cmp_a }}" data-b="{{ fav.id|cmp_b }}"
+             {% elif fav.type == 'card' %}data-ref="{{ fav.name|before:' · ' }}"
+             {% endif %}
+             {% if fav.sprite %}data-sprite="{{ fav.sprite }}"{% endif %}>
+          <form class="remove-form"
+                hx-post="{% url 'pokedex:remove_favourite' %}"
+                hx-target="#favourites-list"
+                hx-swap="innerHTML">
+            <input type="hidden" name="id"
+                   value="{{ fav.id }}">
+            <input type="hidden" name="type"
+                   value="{{ fav.type }}">
+            <button type="submit" class="remove"
+                    aria-label="Remove">✕</button>
+          </form>
+          <a class="fav-link"
+             {% if fav.type == 'card' %}target="_blank" rel="noopener"{% endif %}
+             href="{% if fav.type == 'move' %}{% url 'pokedex:moves' %}?q={{ fav.name|urlencode }}{% elif fav.type == 'ability' %}{% url 'pokedex:abilities' %}?q={{ fav.name|urlencode }}{% elif fav.type == 'item' %}{% url 'pokedex:items' %}?q={{ fav.name|urlencode }}{% elif fav.type == 'sprite' %}{% url 'pokedex:sprites' %}?q={{ fav.name|urlencode }}{% elif fav.type == 'card' %}{% url 'pokedex:cards' %}?q={{ fav.name|before:" · "|urlencode }}{% elif fav.type == 'compare' %}{% url 'pokedex:compare' %}?mode={{ fav.id|cmp_mode }}&amp;a={{ fav.id|cmp_a|urlencode }}&amp;b={{ fav.id|cmp_b|urlencode }}{% else %}{% url 'pokedex:search' %}?q={{ fav.name|urlencode }}{% if fav.id|fav_game %}&amp;game={{ fav.id|fav_game|urlencode }}{% endif %}{% endif %}">
+            {% if fav.sprite and fav.type == 'item' %}
+              <img src="{{ fav.sprite }}" class="fav-item-img"
+                   alt="{{ fav.name|capfirst }}">
+            {% elif fav.sprite %}
+              <img src="{{ fav.sprite }}"
+                 data-alt="{{ fav.sprite|slice:':-4' }}/high.png"
+                 onerror="cardImgError(this)"
+                 class="fav-card-img"
+                 alt="{{ fav.name|capfirst }}">
+            {% endif %}
+            <span class="fav-name">
+              ★ {{ fav.name|capfirst }}
+            </span>
+            {% if fav.type == 'pokemon' %}
+              {% with g=fav.id|fav_game tags=fav.id|fav_tags %}
+                {% if g or tags %}
+                  <span class="fav-game">{% if g %}{{ g|vg_label }}{% endif %}{% for t in tags %}{% if g or not forloop.first %} · {% endif %}{{ t }}{% endfor %}</span>
+                {% endif %}
+              {% endwith %}
+            {% endif %}
+          </a>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% empty %}
+  <p class="empty">
+    You have no favourites yet.
+    Search and save something.
+  </p>
+{% endfor %}

@@ -1,0 +1,700 @@
+{% if request.htmx %}<div id="fav-slot" class="fav-slot" hx-swap-oob="true">{% include "pokedex/_fav_items.html" %}</div>{% endif %}
+{% if request.htmx %}{% include "pokedex/_compare_last.html" with oob=True %}{% endif %}
+{% if same %}
+<p class="empty">
+  Pick two different {% if mode == 'move' %}moves{% elif mode == 'ability' %}abilities{% elif mode == 'item' %}items{% else %}Pokémon{% endif %} to compare.
+  {% if mode == 'pokemon' %}A Pokémon can be compared with its Mega form.{% endif %}
+</p>
+{% elif not_found %}
+<p class="empty">
+  Couldn't find {% for n in missing %}"{{ n }}"{% if not forloop.last %} or {% endif %}{% endfor %}
+  as {% if mode == 'move' %}a move{% elif mode == 'ability' %}an ability{% elif mode == 'item' %}a battle item{% else %}a Pokémon{% endif %}.
+  Check the spelling, or pick a name from the suggestions.
+</p>
+{% elif pa and pb %}
+{{ type_chart|json_script:"type-chart-data" }}
+<div class="compare-grid">
+  {% include "pokedex/_compare_pokemon_card.html" with p=pa side="a" %}
+  {% include "pokedex/_compare_pokemon_card.html" with p=pb side="b" %}
+</div>
+
+<script>
+(function() {
+  // Newest game first; the same order the Pokémon page uses to pick a
+  // default game.
+  var genOrder = [
+    'champions','legends-za',
+    'scarlet-violet','legends-arceus','brilliant-diamond-shining-pearl','sword-shield',
+    'lets-go-pikachu-lets-go-eevee','ultra-sun-ultra-moon','sun-moon',
+    'omega-ruby-alpha-sapphire','x-y','black-2-white-2','black-white',
+    'heartgold-soulsilver','platinum','diamond-pearl','emerald',
+    'firered-leafgreen','ruby-sapphire','crystal','gold-silver','yellow','red-blue'
+  ];
+  var state = {};
+  // Games saved in the address before this page's own start-up overwrites them.
+  var savedGame = {
+    a: window.pksPageMemory ? pksPageMemory.get('game-a') : '',
+    b: window.pksPageMemory ? pksPageMemory.get('game-b') : ''
+  };
+  var formMovesUrl = '{% url "pokedex:form_moves" %}';
+  var movesPageUrl = '{% url "pokedex:moves" %}';
+  var abilitiesPageUrl = '{% url "pokedex:abilities" %}';
+
+  function el(side, part) {
+    return document.getElementById('cmp-' + side + '-' + part);
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function cap(s) {
+    s = String(s || '');
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+  function readJSON(id, fallback) {
+    try {
+      var node = document.getElementById(id);
+      var v = node ? JSON.parse(node.textContent) : null;
+      return (v && typeof v === 'object') ? v : fallback;
+    } catch (e) {
+      return fallback;
+    }
+  }
+  function hasGameBtn(side, vg) {
+    return !!document.querySelector(
+      '#cmp-' + side + '-games [data-vg="' + vg + '"]'
+    );
+  }
+  // Gender differences: the Female toggle swaps in the female sprites, and
+  // only shows for games that have one.
+  function hasFemale(s) {
+    return Object.keys(s.fSprites).length > 0 || !!s.fDef ||
+      Object.keys(s.fShinies).length > 0 || !!s.fShinyDef;
+  }
+  function femaleHere(s) {
+    var perGame = Object.keys(s.fSprites).length > 0 ||
+      Object.keys(s.fShinies).length > 0;
+    if (s.gen && perGame) return !!(s.fSprites[s.gen] || s.fShinies[s.gen]);
+    return hasFemale(s);
+  }
+  // Male and female as separate forms (Indeedee, Basculegion, Meowstic...): the
+  // Male / Female buttons pick the form so its stats and moves follow.
+  function genderPair(s) {
+    for (var i = 0; i < s.forms.length; i++) {
+      var m = /^(.+)-male$/.exec(s.forms[i].name || '');
+      if (!m) continue;
+      for (var j = 0; j < s.forms.length; j++) {
+        if (s.forms[j].name === m[1] + '-female') return { male: i, female: j };
+      }
+    }
+    return null;
+  }
+  function femaleActive(s) {
+    if (genderPair(s)) return false;
+    return s.femaleOn && femaleHere(s);
+  }
+  function spriteMaps(s) {
+    return femaleActive(s)
+      ? { n: s.fSprites, s: s.fShinies, nd: s.fDef, sd: s.fShinyDef }
+      : { n: s.sprites, s: s.shinies, nd: s.def, sd: s.shinyDef };
+  }
+  function refreshGenderToggle(side) {
+    var s = state[side];
+    var gp = genderPair(s);
+    var wrap = el(side, 'gender');
+    if (wrap) wrap.style.display = (gp || femaleHere(s)) ? '' : 'none';
+    var isF = gp ? /-female$/.test(s.formName) : s.femaleOn;
+    var male = el(side, 'gender-male');
+    var female = el(side, 'gender-female');
+    if (male) male.classList.toggle('active', !isF);
+    if (female) female.classList.toggle('active', isF);
+  }
+  function hasGameSprites(s) { return Object.keys(spriteMaps(s).n).length > 0; }
+  function hasGameShinies(s) { return Object.keys(spriteMaps(s).s).length > 0; }
+  // The selected game has no sprite at all (e.g. XD: Gale of Darkness).
+  function spriteMissing(s) {
+    return !!s.gen && hasGameSprites(s) && !spriteMaps(s).n[s.gen];
+  }
+  // Shiny is on but the selected game has no shiny sprite.
+  function shinyMissing(s) {
+    if (!s.shinyOn) return false;
+    var m = spriteMaps(s);
+    var shiny = (s.gen && hasGameShinies(s)) ? m.s[s.gen] : m.sd;
+    return !shiny;
+  }
+  function currentSprite(s) {
+    var m = spriteMaps(s);
+    var url = (s.gen && hasGameSprites(s)) ? m.n[s.gen] : '';
+    var shiny = (s.gen && hasGameShinies(s)) ? m.s[s.gen] : m.sd;
+    if (s.shinyOn && shiny) url = shiny;
+    return url || (s.shinyOn ? m.sd : '') || m.nd;
+  }
+  // Non-square sprites keep their own aspect ratio (CSS .non-square).
+  function fitSprite(img) {
+    if (!img || !img.naturalWidth || !img.naturalHeight) return;
+    img.classList.toggle('non-square', img.naturalWidth !== img.naturalHeight);
+  }
+  function refreshSprite(side) {
+    var s = state[side];
+    refreshGenderToggle(side);
+    var img = el(side, 'sprite');
+    var none = el(side, 'nosprite');
+    var url = currentSprite(s);
+    var noSprite = spriteMissing(s);
+    var missing = noSprite || shinyMissing(s);
+    if (none) {
+      none.textContent = noSprite
+        ? 'No sprite for this game'
+        : (femaleActive(s)
+            ? 'No shiny female sprite for this game'
+            : 'No shiny sprite for this game');
+    }
+    if (img && url) img.src = url;
+    // Pixel art stays crisp; the 3D renders (Z-A, Champions) are smoothed.
+    if (img) {
+      img.classList.toggle('smooth',
+        /\.webp(\?|$)/.test(url || '') || /\/other\/home\//.test(url || '') ||
+        s.gen === 'legends-za' || s.gen === 'champions');
+      img.hidden = missing;
+    }
+    if (none) none.hidden = !missing;
+    refreshFav(side);
+  }
+
+  // Each card's own Favourite slider is pinned to what the card shows: the
+  // form, the selected game, shiny and female (same id as the Pokémon page).
+  function refreshFav(side) {
+    var s = state[side];
+    var cb = el(side, 'fav');
+    if (!s || !cb) return;
+    var id = s.formName + '~' + (s.gen || 'default');
+    if (s.shinyOn) id += '|s';
+    if (femaleActive(s)) id += '|f';
+    cb.dataset.id = id;
+    cb.dataset.name = s.formName;
+    var url = spriteMissing(s) ? '' : currentSprite(s);
+    cb.dataset.sprite = url || cb.dataset.defaultSprite || '';
+    if (window.syncFavChecks) window.syncFavChecks();
+  }
+
+  // The moves table follows the selected form (G-Max has Max Moves).
+  function movesBody(side) {
+    return document.querySelector('#cmp-' + side + '-moves tbody');
+  }
+  function renderMoves(side, rows) {
+    var body = movesBody(side);
+    if (!body) return;
+    body.innerHTML = rows.map(function(r) {
+      return '<tr class="move-row" data-vg="' + esc(r[1]) +
+        '" data-name="' + esc(r[0]) + '"><td><a class="move-link" href="' +
+        movesPageUrl + '?q=' + encodeURIComponent(r[0]) + '">' +
+        esc(cap(r[0])) + '</a></td><td>' + esc(r[2]) + '</td>' + pksMoveMeta.cells + '</tr>';
+    }).join('');
+    window.filterCmpMoves(side);
+  }
+  function loadFormMoves(side) {
+    var s = state[side];
+    var name = s.formName;
+    var seq = ++s.movesSeq;   // only the newest request may fill the table
+    var body = movesBody(side);
+    if (!body) return;
+    if (s.movesCache[name]) { renderMoves(side, s.movesCache[name]); return; }
+    var note = el(side, 'no-moves');
+    if (note) note.hidden = true;
+    body.innerHTML =
+      '<tr><td colspan="7" class="empty">Loading moves…</td></tr>';
+    fetch(formMovesUrl + '?q=' + encodeURIComponent(name))
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var rows = d.moves || [];
+        if (rows.length) s.movesCache[name] = rows;
+        if (seq === s.movesSeq) renderMoves(side, rows);
+      })
+      .catch(function() {
+        if (seq === s.movesSeq) {
+          body.innerHTML =
+            '<tr><td colspan="7" class="empty">Could not load moves.</td></tr>';
+        }
+      });
+  }
+
+  // The Filters button (Type, Category, Generation) of each moves search bar.
+  var moveFilters = {};
+  window.filterCmpMoves = function(side) {
+    var box = el(side, 'move-search');
+    var srch = ((box && box.value) || '').toLowerCase().trim()
+      .replace(/\s+/g, '-');
+    var s = state[side];
+    var F = moveFilters[side];
+    var anyForGame = false;
+    document.querySelectorAll('#cmp-' + side + '-moves .move-row')
+      .forEach(function(row) {
+        var mG = (!s.gen || row.dataset.vg === s.gen);
+        if (mG) anyForGame = true;
+        var mN = (srch === '' || row.dataset.name.indexOf(srch) !== -1) &&
+          (!F || !F.active() || F.matches(row.dataset.name));
+        row.style.display = (mG && mN) ? '' : 'none';
+      });
+    var note = el(side, 'no-moves');
+    if (note) note.hidden = anyForGame;
+    pksMoveMeta.fill(document.getElementById('cmp-' + side + '-moves'));
+  };
+
+  var typeChart = readJSON('type-chart-data', {});
+  function renderChart(side, types) {
+    pksTypeChart.render(el(side, 'type-chart'), types, typeChart);
+  }
+  function renderAbilities(side, abilities) {
+    var list = el(side, 'abilities');
+    if (!list || !abilities) return;
+    list.innerHTML = abilities.map(function(a) {
+      return '<a class="ability-row" href="' + abilitiesPageUrl + '?q=' +
+        encodeURIComponent(a.name) + '"><span class="ability-name">' +
+        esc(cap(a.name)) +
+        (a.is_hidden ? ' <span class="hidden-tag">Hidden</span>' : '') +
+        '</span><span class="ability-effect">' + esc(a.effect) +
+        '</span></a>';
+    }).join('');
+  }
+
+  // Legends Z-A has no abilities, only these passive effects (Aegislash,
+  // Mimikyu, Morpeko, Zygarde and Tatsugiri / Dondozo are the old abilities;
+  // the rest are new). `form` limits an entry to forms whose name matches it.
+  // Same list as the Pokémon page. Returns {name, effect}, or null.
+  var ZA_SWORD = { name: 'Sacred Sword Boost',
+    effect: 'Use Sacred Sword: raises both Attack and Special Attack' };
+  var ZA_COMMANDER = { name: 'Commander',
+    effect: 'If you have both Dondozo and Tatsugiri in your team, when you send out Dondozo, Tatsugiri will activate as well and be swallowed by Dondozo to become its commander. All stats raised for rest of the battle. Dondozo cannot switch out' };
+  var ZA_PASSIVE = {
+    raichu: { form: /^raichu-mega-x$/, name: 'Volt Tackle Boost',
+      effect: 'Use Volt Tackle: when Mega Raichu uses Volt Tackle, its Attack raises' },
+    cobalion: ZA_SWORD, terrakion: ZA_SWORD, virizion: ZA_SWORD, keldeo: ZA_SWORD,
+    aegislash: { name: 'Stance Change',
+      effect: "Changes to Blade Forme when it uses an attacking move. Reverts to Shield Forme when it uses King's Shield" },
+    mimikyu: { name: 'Disguise',
+      effect: 'Send Mimikyu out in battle with no damage: prevents the first batch of damage from being done to Mimikyu' },
+    morpeko: { name: 'Hunger Switch',
+      effect: 'Changes form and type of Aura Wheel after each time Aura Wheel is used' },
+    zygarde: { form: /^zygarde(?!-mega)/, name: 'Power Construct',
+      effect: 'Changes Zygarde to its Complete Forme when its HP drops below half' },
+    dondozo: ZA_COMMANDER, tatsugiri: ZA_COMMANDER
+  };
+  function zaPassive(formName) {
+    var n = String(formName || '').toLowerCase();
+    var p = ZA_PASSIVE[n.split('-')[0]];
+    return p && (!p.form || p.form.test(n)) ? p : null;
+  }
+  function zaPassiveHtml(p) {
+    return '<div class="ability-row passive"><span class="ability-name">' +
+      p.name + '</span><span class="ability-effect">' + p.effect +
+      '</span></div>';
+  }
+  // No abilities in Legends Z-A, nor in Legends Arceus (except Arceus, Cherrim
+  // and Regigigas, all forms).
+  function noAbilitiesFor(gen, formName) {
+    if (gen === 'legends-za') return true;
+    if (gen === 'legends-arceus') {
+      return !/^(arceus|cherrim|regigigas)(?![a-z])/i.test(String(formName || ''));
+    }
+    return false;
+  }
+  // Same message as on the Pokémon page.
+  function refreshAbilities(side) {
+    var s = state[side];
+    var za = s.gen === 'legends-za' ? zaPassive(s.formName) : null;
+    var none = noAbilitiesFor(s.gen, s.formName) && !za;
+    var list = el(side, 'abilities');
+    if (list) list.style.display = (none || za) ? 'none' : '';
+    var zaBox = el(side, 'za-passive');
+    if (zaBox) {
+      zaBox.style.display = za ? '' : 'none';
+      zaBox.innerHTML = za ? zaPassiveHtml(za) : '';
+    }
+    var msg = el(side, 'no-abilities');
+    if (msg) msg.hidden = !none;
+  }
+
+  // A form only has a button while the selected game is one it exists in.
+  function formInGame(f, vg) {
+    // every Zygarde has Power Construct in Legends Z-A: no separate forms
+    if (vg === 'legends-za' && f && /power-construct/.test(f.name || '')) return false;
+    return !vg || (f && (f.games || []).some(function(g) { return g[0] === vg; }));
+  }
+  function updateFormButtons(side) {
+    var s = state[side];
+    if (!s.forms.length) return;
+    var gp = genderPair(s);
+    var any = false;
+    document.querySelectorAll('#cmp-' + side + '-forms .form-btn')
+      .forEach(function(b) {
+        var idx = Number(b.dataset.idx);
+        var show = formInGame(s.forms[idx], s.gen) &&
+          !(gp && (idx === gp.male || idx === gp.female));
+        b.style.display = show ? '' : 'none';
+        if (show) any = true;
+      });
+    var wrap = el(side, 'forms');
+    if (wrap) wrap.style.display = any ? '' : 'none';
+  }
+
+  window.setCmpGen = function(side, vg) {
+    if (window.pksPageMemory) pksPageMemory.set('game-' + side, vg);
+    state[side].gen = vg;
+    document.querySelectorAll('#cmp-' + side + '-games .game-btn')
+      .forEach(function(b) {
+        b.classList.toggle('active', b.dataset.vg === vg);
+      });
+    updateFormButtons(side);
+    refreshAbilities(side);
+    refreshSprite(side);
+    window.filterCmpMoves(side);
+  };
+
+  window.setCmpShiny = function(side, on) {
+    state[side].shinyOn = on;
+    try { localStorage.setItem('pks-shiny', on ? '1' : '0'); } catch (e) {}
+    refreshSprite(side);
+  };
+
+  window.setCmpFemale = function(side, on) {
+    var gp = genderPair(state[side]);
+    if (gp) {
+      state[side].femaleOn = on;
+      try { localStorage.setItem('pks-female', on ? '1' : '0'); } catch (e) {}
+      window.setCmpForm(side, on ? gp.female : gp.male);
+      return;
+    }
+    state[side].femaleOn = on;
+    try { localStorage.setItem('pks-female', on ? '1' : '0'); } catch (e) {}
+    refreshSprite(side);
+  };
+
+  // Other forms (Mimikyu, Aegislash, Minior, Cramorant...) of one side.
+  window.setCmpForm = function(side, idx) {
+    var s = state[side];
+    var f = s.forms[idx];
+    if (!f) return;
+    // a refresh stays on this form (the card's own form is the default)
+    if (window.pksPageMemory) pksPageMemory.set('form-' + side, f.current ? '' : f.name);
+
+    s.sprites = f.sprites_by_gen || {};
+    s.shinies = f.shiny_sprites_by_gen || {};
+    s.def = f.sprite || '';
+    s.shinyDef = f.shiny_sprite || '';
+    s.fSprites = f.female_sprites_by_gen || {};
+    s.fShinies = f.shiny_female_sprites_by_gen || {};
+    s.fDef = f.female_sprite || '';
+    s.fShinyDef = f.shiny_female_sprite || '';
+
+    var statsEl = el(side, 'stats');
+    if (statsEl && f.stats) {
+      var total = 0;
+      statsEl.innerHTML = f.stats.map(function(st) {
+        total += Number(st.value) || 0;
+        return '<li class="stat-' + esc(st.name) + '"><span>' +
+          esc(st.label || cap(st.name)) + '</span><b>' +
+          esc(st.value) + '</b></li>';
+      }).join('');
+      var totalEl = document.getElementById('cmp-' + side + '-stat-total');
+      if (totalEl) totalEl.textContent = total;
+    }
+
+    var typesEl = el(side, 'types');
+    if (typesEl && f.types) {
+      typesEl.innerHTML = f.types.map(function(t) {
+        return '<span class="type-badge type-' + esc(t) + '">' +
+          esc(cap(t)) + '</span>';
+      }).join('');
+    }
+
+    // Game buttons: only the games this form is in.
+    renderChart(side, f.types || []);
+    renderAbilities(side, f.abilities);
+
+    var gamesEl = el(side, 'games');
+    if (gamesEl && f.games) {
+      gamesEl.innerHTML = f.games.map(function(g) {
+        return '<button type="button" class="game-btn" data-vg="' + esc(g[0]) +
+          '" onclick="setCmpGen(\'' + side + '\', \'' + esc(g[0]) + '\')">' +
+          esc(g[1]) + '</button>';
+      }).join('');
+    }
+
+    document.querySelectorAll('#cmp-' + side + '-forms .form-btn')
+      .forEach(function(b) {
+        b.classList.toggle('active', Number(b.dataset.idx) === idx);
+      });
+
+    var img = el(side, 'sprite');
+    if (img) img.alt = f.label;
+    s.formName = f.name || s.formName;
+
+    // Jump to the newest game this form is in.
+    // Stay on the selected game (this form's button only exists if it is in
+    // it); otherwise jump to the newest game this form is in.
+    if (!s.gen || !formInGame(f, s.gen)) {
+      s.gen = (f.games && f.games.length > 0) ? f.games[0][0] : '';
+    }
+    updateFormButtons(side);
+    document.querySelectorAll('#cmp-' + side + '-games .game-btn')
+      .forEach(function(b) {
+        b.classList.toggle('active', b.dataset.vg === s.gen);
+      });
+
+    refreshAbilities(side);
+    refreshSprite(side);
+    loadFormMoves(side);
+  };
+
+  function initSide(side) {
+    var card = el(side, 'card');
+    if (!card) return;
+    var forms = readJSON('cmp-' + side + '-forms-data', []);
+    var s = state[side] = {
+      gen: '',
+      shinyOn: false,
+      forms: Array.isArray(forms) ? forms : [],
+      sprites: readJSON('cmp-' + side + '-sprites', {}),
+      shinies: readJSON('cmp-' + side + '-shinies', {}),
+      def: card.dataset.sprite || '',
+      shinyDef: card.dataset.shinySprite || '',
+      femaleOn: false,
+      fSprites: readJSON('cmp-' + side + '-female-sprites', {}),
+      fShinies: readJSON('cmp-' + side + '-shiny-female-sprites', {}),
+      fDef: card.dataset.femaleSprite || '',
+      fShinyDef: card.dataset.shinyFemaleSprite || '',
+      formName: card.dataset.formName || '',
+      movesCache: {},
+      movesSeq: 0
+    };
+    // The card was rendered for one form: remember its rows so switching
+    // back to it needs no request.
+    var rendered = [];
+    document.querySelectorAll('#cmp-' + side + '-moves .move-row')
+      .forEach(function(tr) {
+        var tds = tr.querySelectorAll('td');
+        rendered.push([tr.dataset.name, tr.dataset.vg,
+                       tds[1].textContent.trim()]);
+      });
+    if (rendered.length) s.movesCache[s.formName] = rendered;
+    try { s.shinyOn = localStorage.getItem('pks-shiny') === '1'; } catch (e) {}
+    try { s.femaleOn = localStorage.getItem('pks-female') === '1'; } catch (e) {}
+    if (genderPair(s)) s.femaleOn = /-female$/.test(s.formName);
+    var toggle = el(side, 'shiny');
+    if (toggle) toggle.checked = s.shinyOn;
+
+    // Filters button on this card's moves search bar.
+    var wrap = el(side, 'move-search-wrapper');
+    if (wrap && window.pksFilters && !wrap.dataset.filtered) {
+      wrap.dataset.filtered = '1';
+      moveFilters[side] = pksFilters.attach({
+        kind: 'move',
+        before: wrap,
+        onChange: function() { window.filterCmpMoves(side); },
+        onLoad: function() { window.filterCmpMoves(side); }
+      });
+    }
+
+    var img = el(side, 'sprite');
+    if (img) {
+      img.addEventListener('load', function() { fitSprite(img); });
+      if (img.complete) fitSprite(img);
+    }
+
+    // Newest game this Pokémon is in (the buttons are newest-first).
+    for (var i = 0; i < genOrder.length; i++) {
+      if (s.sprites[genOrder[i]] && hasGameBtn(side, genOrder[i])) {
+        s.gen = genOrder[i];
+        break;
+      }
+    }
+    if (!s.gen) {
+      var first = document.querySelector('#cmp-' + side + '-games .game-btn');
+      if (first) s.gen = first.dataset.vg;
+    }
+    renderChart(side, Array.prototype.map.call(
+      document.querySelectorAll('#cmp-' + side + '-types .type-badge'),
+      function(b) { return b.textContent.trim().toLowerCase(); }));
+    if (s.gen) window.setCmpGen(side, s.gen);
+    else refreshSprite(side);
+  }
+
+  initSide('a');
+  initSide('b');
+
+  // Compare like with like: when both Pokémon share a game, start both on
+  // the newest one they have in common (genOrder is newest first). If they
+  // share none, each keeps its own newest game.
+  for (var c = 0; c < genOrder.length; c++) {
+    if (hasGameBtn('a', genOrder[c]) && hasGameBtn('b', genOrder[c])) {
+      window.setCmpGen('a', genOrder[c]);
+      window.setCmpGen('b', genOrder[c]);
+      break;
+    }
+  }
+
+  // Reopen each side on the form it was on before a refresh.
+  ['a', 'b'].forEach(function(side) {
+    var saved = window.pksPageMemory ? pksPageMemory.get('form-' + side) : '';
+    var forms = state[side] ? state[side].forms : [];
+    for (var i = 0; saved && i < forms.length; i++) {
+      if (forms[i].name === saved && !forms[i].current) {
+        window.setCmpForm(side, i);
+        break;
+      }
+    }
+  });
+  // ...and on the games they were on. A side with a new Pokémon in it (the
+  // game it was on is not one of its games) follows the other side when it is
+  // in that game too; otherwise both stay on the newest game they share, or
+  // each on its own newest game when they share none (set above).
+  (function() {
+    var sa = savedGame.a, sb = savedGame.b;
+    var okA = !!sa && hasGameBtn('a', sa);
+    var okB = !!sb && hasGameBtn('b', sb);
+    if (okA && okB) {
+      window.setCmpGen('a', sa);
+      window.setCmpGen('b', sb);
+    } else if (okA && hasGameBtn('b', sa)) {
+      window.setCmpGen('a', sa);
+      window.setCmpGen('b', sa);
+    } else if (okB && hasGameBtn('a', sb)) {
+      window.setCmpGen('a', sb);
+      window.setCmpGen('b', sb);
+    }
+  })();
+})();
+</script>
+{% elif ma and mb %}
+<div class="compare-grid">
+  {% include "pokedex/_compare_move_card.html" with m=ma side="a" %}
+  {% include "pokedex/_compare_move_card.html" with m=mb side="b" %}
+</div>
+
+<script>
+(function() {
+  window.setCmpMoveGame = function(side, btn) {
+    if (window.pksPageMemory) pksPageMemory.set('game-' + side, btn.dataset.vg);
+    document.querySelectorAll('#cmp-' + side + '-games .game-btn')
+      .forEach(function(b) {
+        b.classList.toggle('active', b === btn);
+      });
+    var d = btn.dataset;
+    var typeEl = document.getElementById('cmp-' + side + '-move-type');
+    if (typeEl && d.type) {
+      typeEl.className = 'type-badge type-' + d.type;
+      typeEl.textContent = d.type.charAt(0).toUpperCase() + d.type.slice(1);
+    }
+    document.getElementById('cmp-' + side + '-power').textContent =
+      d.power !== '' ? d.power : '—';
+    document.getElementById('cmp-' + side + '-accuracy').textContent =
+      d.accuracy !== '' ? d.accuracy + '%' : '—';
+    document.getElementById('cmp-' + side + '-pp').textContent =
+      d.pp !== '' ? d.pp : '—';
+  };
+  // Start both on the newest game they share; with none in common, each on
+  // the most recent game its move is in.
+  var btnsA = document.querySelectorAll('#cmp-a-games .game-btn');
+  var btnsB = document.querySelectorAll('#cmp-b-games .game-btn');
+  var picks = window.pksPickGames
+    ? pksPickGames(btnsA, btnsB) : { a: btnsA[0], b: btnsB[0] };
+  if (picks.a) window.setCmpMoveGame('a', picks.a);
+  if (picks.b) window.setCmpMoveGame('b', picks.b);
+})();
+</script>
+{% elif abil_a and abil_b %}
+<div class="compare-grid">
+  {% include "pokedex/_compare_ability_card.html" with ab=abil_a side="a" %}
+  {% include "pokedex/_compare_ability_card.html" with ab=abil_b side="b" %}
+</div>
+
+<script>
+(function() {
+  window.setCmpAbilityGame = function(side, btn) {
+    if (window.pksPageMemory) pksPageMemory.set('game-' + side, btn.dataset.vg);
+    document.querySelectorAll('#cmp-' + side + '-games .game-btn')
+      .forEach(function(b) {
+        b.classList.toggle('active', b === btn);
+      });
+  };
+  // Start both on the newest game they share; with none in common, each on
+  // the most recent game its ability is in.
+  var btnsA = document.querySelectorAll('#cmp-a-games .game-btn');
+  var btnsB = document.querySelectorAll('#cmp-b-games .game-btn');
+  var picks = window.pksPickGames
+    ? pksPickGames(btnsA, btnsB) : { a: btnsA[0], b: btnsB[0] };
+  if (picks.a) window.setCmpAbilityGame('a', picks.a);
+  if (picks.b) window.setCmpAbilityGame('b', picks.b);
+})();
+</script>
+{% elif item_a and item_b %}
+<div class="compare-grid">
+  {% include "pokedex/_compare_item_card.html" with it=item_a side="a" %}
+  {% include "pokedex/_compare_item_card.html" with it=item_b side="b" %}
+</div>
+
+<script>
+(function() {
+  // Same price / art logic as the Items page. Picking a game shows what the
+  // item costs (and sells for) in it, and that game's art.
+  var where = {};
+  ['a', 'b'].forEach(function(side) {
+    try {
+      var n = document.getElementById('cmp-' + side + '-where-data');
+      where[side] = n ? JSON.parse(n.textContent) : {};
+    } catch (e) { where[side] = {}; }
+  });
+  window.setCmpItemGame = function(side, btn) {
+    if (window.pksPageMemory) pksPageMemory.set('game-' + side, btn.dataset.vg);
+    var vg = btn.dataset.vg;
+    document.querySelectorAll('#cmp-' + side + '-games .game-btn')
+      .forEach(function(b) { b.classList.toggle('active', b === btn); });
+    var w = (where[side] || {})[vg];
+    var cost = document.getElementById('cmp-' + side + '-cost');
+    if (cost) {
+      var c = w && w.cost ? w.cost : '';
+      var na = /^n\/a$/i.test(c);
+      var bp = w && w.bp ? w.bp : '';
+      var vp = w && w.vp ? w.vp : '';
+      var dflt = cost.dataset.default;
+      // Champions uses Victory Points; never turn a Poké Dollar price into VP.
+      if (vg === 'champions') {
+        if (vp) cost.textContent = /\bVP\b/i.test(vp) ? vp : vp + ' VP';
+        else cost.textContent = !c || na ? dflt : 'Not sold';
+      } else if (c && !na) cost.textContent = c;
+      else if (bp && (na || dflt === '—')) cost.textContent = bp;
+      else cost.textContent = !c ? dflt : 'Not sold';
+    }
+    var sellRow = document.getElementById('cmp-' + side + '-sell-row');
+    var sell = document.getElementById('cmp-' + side + '-sell');
+    if (sellRow && sell) {
+      var sp = w && w.sell && !/^n\/a$/i.test(w.sell) ? w.sell : '';
+      sell.textContent = sp || '—';
+      sellRow.hidden = !sp;
+    }
+    // This game's art: try each candidate until one loads.
+    var img = document.getElementById('cmp-' + side + '-sprite');
+    if (img) {
+      var list = (btn.dataset.sprites || '').split(' ').filter(Boolean);
+      if (!list.length) list = [img.dataset.default];
+      var i = 0;
+      img.onerror = function() {
+        i += 1;
+        if (i < list.length) img.src = list[i];
+        else img.onerror = null;
+      };
+      if (img.getAttribute('src') !== list[0]) img.src = list[0];
+    }
+  };
+  // Start both on the newest game they share; with none in common, each on
+  // the most recent game its item is in.
+  var btnsA = document.querySelectorAll('#cmp-a-games .game-btn');
+  var btnsB = document.querySelectorAll('#cmp-b-games .game-btn');
+  var picks = window.pksPickGames
+    ? pksPickGames(btnsA, btnsB) : { a: btnsA[0], b: btnsB[0] };
+  if (picks.a) window.setCmpItemGame('a', picks.a);
+  if (picks.b) window.setCmpItemGame('b', picks.b);
+})();
+</script>
+{% endif %}

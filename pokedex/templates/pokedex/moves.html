@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Moves · PokéSearcher{% endblock %}
+{% block content %}
+<h1>Search a Move</h1>
+<div class="search-wrapper">
+  <form class="search-form"
+        action="{% url 'pokedex:moves' %}"
+        id="moves-search-form"
+        hx-get="{% url 'pokedex:moves' %}" hx-push-url="true"
+        hx-trigger="submit"
+        hx-target="#results"
+        hx-swap="innerHTML">
+    <input type="text" name="q"
+           id="moves-search"
+           value="{{ q }}"
+           placeholder="Type a move name…"
+           autocomplete="off" required>
+    <button type="submit">Search</button>
+  </form>
+  <div id="suggestions" class="suggestions"></div>
+</div>
+{% include "pokedex/_last_search.html" %}
+<div id="results">
+  {% if move or not_found %}
+    {% include "pokedex/moves_result.html" %}
+  {% endif %}
+</div>
+<script>
+(function() {
+  var allM = [];
+  var inp = document.getElementById('moves-search');
+  var sug = document.getElementById('suggestions');
+  var form = document.getElementById('moves-search-form');
+  var activeIdx = -1;
+
+  // Filter bar (Type, Generation...) above the search box; it narrows the
+  // suggestions below. Typing a name and pressing Search still searches it.
+  var F = pksFilters.attach({
+    kind: 'move',
+    before: inp.closest('.search-wrapper'),
+    onChange: function() { render(inp.value.trim()); },
+    onLoad: function() {
+      if (document.activeElement === inp) render(inp.value.trim());
+    }
+  });
+  function showEmpty() {
+    if (F.active()) {
+      sug.style.display = 'block';
+      sug.appendChild(F.emptyNote());
+    } else {
+      sug.style.display = 'none';
+    }
+  }
+
+  fetch('/api/move-list/')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { allM = d; });
+
+  function choose(name) {
+    inp.value = name;
+    sug.style.display = 'none';
+    activeIdx = -1;
+    form.requestSubmit();
+  }
+  function makeItem(name) {
+    var div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.textContent = name;
+    div.addEventListener('click', function() { choose(name); });
+    return div;
+  }
+  function render(query) {
+    sug.innerHTML = '';
+    activeIdx = -1;
+    var src = F.apply(allM);
+    // Nothing typed yet: the whole list in order. Otherwise best match first.
+    var matches = !query ? src.slice() : src
+      .map(function(n) { return { n: n, s: pksScore(n, query) }; })
+      .filter(function(x) { return x.s > 0; })
+      .sort(function(a, b) { return b.s - a.s; })
+      .map(function(x) { return x.n; });
+    if (matches.length === 0) {
+      showEmpty();
+      return;
+    }
+    sug.style.display = 'block';
+    matches.slice(0, 3).forEach(function(n) { sug.appendChild(makeItem(n)); });
+    var rest = matches.slice(3);
+    if (rest.length > 0) {
+      var more = document.createElement('div');
+      more.className = 'suggestions-more';
+      rest.forEach(function(n) { more.appendChild(makeItem(n)); });
+      sug.appendChild(more);
+    }
+  }
+  function highlight(items, idx) {
+    items.forEach(function(el, i) {
+      el.classList.toggle('suggestion-active', i === idx);
+    });
+    if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+  }
+
+  inp.addEventListener('input', function() { render(inp.value.trim()); });
+  inp.addEventListener('focus', function() {
+    if (!inp.value.trim() && allM.length > 0) render('');
+  });
+  inp.addEventListener('keydown', function(e) {
+    var items = sug.querySelectorAll('.suggestion-item');
+    if (e.key === 'Enter') {
+      if (activeIdx >= 0 && items[activeIdx]) {
+        e.preventDefault();
+        choose(items[activeIdx].textContent.trim());
+        return;
+      }
+      sug.style.display = 'none';
+      return;
+    }
+    if (sug.style.display !== 'block' || items.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = (activeIdx + 1) % items.length;
+      highlight(items, activeIdx);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = (activeIdx - 1 + items.length) % items.length;
+      highlight(items, activeIdx);
+    } else if (e.key === 'Escape') {
+      sug.style.display = 'none';
+    }
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-wrapper, .filter-bar')) sug.style.display = 'none';
+  });
+})();
+</script>
+{% endblock %}

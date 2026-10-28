@@ -1,0 +1,45 @@
+{% load static %}{% comment %}
+  The Eevee ring: the first Pokémon of a line with many branches in the
+  middle, what it evolves into around it, and its Gigantamax form to the right
+  of it, each joined to it by an arrow pointing away from the middle Pokémon
+  with what makes it evolve. Evolutions that need a place or affection only say
+  "See Game Info tab". It sits beside the sprite, where the normal evolution
+  line is. The page script hides the evolutions that are not in the selected
+  game (data-games) but only greys out the middle Pokémon and the Gigantamax /
+  Mega forms (data-extra), like the normal evolution line does.
+{% endcomment %}
+{% with r=pokemon.evolution_tree.ring %}
+<section class="evolution-section evo-ring-section" id="evo-ring-section">
+  <h3>Evolution</h3>
+  <div class="evo-ring" id="evo-ring" data-height="{{ r.height }}" style="aspect-ratio: 100 / {{ r.height }}">
+    <svg class="ring-lines" id="ring-svg" viewBox="0 0 100 {{ r.height }}" aria-hidden="true">
+      <defs>
+        <marker id="ring-head" viewBox="0 0 10 10" refX="8" refY="5"
+                markerWidth="5" markerHeight="5" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      {% for n in r.nodes %}
+      <line class="ring-line" data-games="{{ n.games|join:' ' }}"
+            x1="{{ n.x1 }}" y1="{{ n.y1 }}" x2="{{ n.x2 }}" y2="{{ n.y2 }}"/>
+      {% endfor %}
+      {% for n in r.extras %}
+      <line class="ring-line ring-line-gmax" data-extra="1" data-games="{{ n.games|join:' ' }}"
+            x1="{{ n.x1 }}" y1="{{ n.y1 }}" x2="{{ n.x2 }}" y2="{{ n.y2 }}"/>
+      {% endfor %}
+    </svg>
+
+    {% for n in r.nodes %}{% include "pokedex/_evo_ring_label.html" %}{% endfor %}
+    {% for n in r.extras %}{% include "pokedex/_evo_ring_label.html" %}{% endfor %}
+
+    {% with n=r.root %}
+    {% include "pokedex/_evo_ring_node.html" with root=True %}
+    {% endwith %}
+    {% for n in r.nodes %}{% include "pokedex/_evo_ring_node.html" %}{% endfor %}
+    {% for n in r.extras %}{% include "pokedex/_evo_ring_node.html" %}{% endfor %}
+  </div>
+  <p class="empty" id="evo-ring-empty" hidden>
+    None of these evolutions are in the selected game.
+  </p>
+</section>
+{% endwith %}

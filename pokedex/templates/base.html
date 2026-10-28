@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}PokéSearcher{% endblock %}</title>
+ {% load static %}
+<script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <link rel="stylesheet"
+        href="{% static 'pokedex/style.css' %}?v=19">
+  <script src="{% static 'pokedex/suggest.js' %}?v=5"></script>
+  <script src="{% static 'pokedex/pks-shared.js' %}?v=11"></script>
+  <script src="{% static 'pokedex/filters.js' %}?v=2"></script>
+  <link rel="icon" href="{% static 'pokedex/favicon.ico' %}" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'pokedex/favicon-32.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'pokedex/favicon-16.png' %}">
+  <link rel="icon" type="image/png" sizes="192x192" href="{% static 'pokedex/icon-192.png' %}">
+  <link rel="apple-touch-icon" sizes="180x180" href="{% static 'pokedex/apple-touch-icon.png' %}">
+</head>
+<body hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+  <script>
+    if (localStorage.getItem('pks-theme') === 'light')
+      document.body.classList.add('light-mode');
+  </script>
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="brand">
+        <img src="{% static 'pokedex/icon-192.png' %}" alt="">
+        PokéSearcher
+      </div>
+      <nav class="main-nav" id="main-nav"
+           aria-label="Main navigation">
+        {% with current=request.resolver_match.url_name %}
+        <a href="{% url 'pokedex:home' %}"{% if current == 'home' or current == 'search' %} class="active" aria-current="page" tabindex="-1" onclick="return false;"{% endif %}>Pokémon</a>
+        <a href="{% url 'pokedex:moves' %}"{% if current == 'moves' %} class="active" aria-current="page" tabindex="-1" onclick="return false;"{% endif %}>Moves</a>
+        <a href="{% url 'pokedex:abilities' %}"{% if current == 'abilities' %} class="active" aria-current="page" tabindex="-1" onclick="return false;"{% endif %}>Abilities</a>
+        <a href="{% url 'pokedex:items' %}"{% if current == 'items' %} class="active" aria-current="page" tabindex="-1" onclick="return false;"{% endif %}>Items</a>
+        <a href="{% url 'pokedex:sprites' %}"{% if current == 'sprites' %} class="active" aria-current="page" tabindex="-1" onclick="return false;"{% endif %}>Sprites</a>
+        <a href="{% url 'pokedex:cards' %}"{% if current == 'cards' %} class="active" aria-current="page" tabindex="-1" onclick="return false;"{% endif %}>Cards</a>
+        <a href="{% url 'pokedex:compare' %}"{% if current == 'compare' %} class="active" aria-current="page" tabindex="-1" onclick="return false;"{% endif %}>Compare</a>
+        <a href="{% url 'pokedex:favourites' %}"
+           id="fav-nav"{% if current == 'favourites' %} class="active" aria-current="page" tabindex="-1" onclick="return false;"{% endif %}>
+          Favourites
+          (<span id="fav-count">{{ favourites_count }}</span>)
+        </a>
+        {% endwith %}
+      </nav>
+    </div>
+    <div class="topbar-actions">
+      <button class="theme-toggle"
+              onclick="toggleTheme()"
+              aria-label="Toggle theme">
+        <img class="ico-dark" src="{% static 'pokedex/luxball-icon.png' %}" alt="Luxury Ball (dark mode)">
+        <img class="ico-light" src="{% static 'pokedex/pokeball-icon.png' %}" alt="Poké Ball (light mode)">
+      </button>
+      <button class="nav-toggle"
+              id="nav-toggle"
+              type="button"
+              aria-label="Open menu"
+              aria-controls="main-nav"
+              aria-expanded="false">
+        <span class="bar"></span>
+        <span class="bar"></span>
+        <span class="bar"></span>
+      </button>
+    </div>
+  </header>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">
+    <span>Data from
+      <a href="https://pokeapi.co"
+         target="_blank" rel="noopener">PokeAPI</a>,
+      <a href="https://tcgdex.dev"
+         target="_blank" rel="noopener">TCGdex</a>
+      and
+      <a href="https://bulbapedia.bulbagarden.net"
+         target="_blank" rel="noopener">Bulbapedia</a>
+    </span>
+  </footer>
+  {{ favourite_keys|json_script:"fav-keys" }}
+  <script>
+    function toggleTheme() {
+      var b = document.body;
+      b.classList.toggle('light-mode');
+      localStorage.setItem(
+        'pks-theme',
+        b.classList.contains('light-mode') ? 'light' : 'dark'
+      );
+    }
+
+    // Hamburger menu (shown on small screens).
+    (function() {
+      var bar = document.querySelector('.topbar');
+      var btn = document.getElementById('nav-toggle');
+      var nav = document.getElementById('main-nav');
+      if (!bar || !btn || !nav) return;
+      function setOpen(open) {
+        bar.classList.toggle('nav-open', open);
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      }
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        setOpen(!bar.classList.contains('nav-open'));
+      });
+      nav.addEventListener('click', function(e) {
+        if (e.target.closest('a')) setOpen(false);
+      });
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.topbar')) setOpen(false);
+      });
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && bar.classList.contains('nav-open')) {
+          setOpen(false);
+          btn.focus();
+        }
+      });
+      // Growing past the breakpoint puts the normal tabs back.
+      var mq = window.matchMedia('(min-width: 961px)');
+      var onChange = function(e) { if (e.matches) setOpen(false); };
+      if (mq.addEventListener) mq.addEventListener('change', onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+    })();
+
+    // A TCG card image that fails to load: try the alternate URL once,
+    // then drop the card so every card on screen shows its picture.
+    function cardImgError(img) {
+      if (img.dataset.alt && !img.dataset.triedAlt) {
+        img.dataset.triedAlt = '1';
+        img.src = img.dataset.alt;
+        return;
+      }
+      var grid = img.closest('.card-grid');
+      var card = img.closest('.tcg-card');
+      if (card) card.remove();
+      if (grid && !grid.querySelector('.tcg-card')) {
+        var p = document.createElement('p');
+        p.className = 'empty';
+        p.textContent =
+          'No trading cards with artwork found for this Pokémon.';
+        grid.replaceWith(p);
+      }
+    }
+
+    function setFavCount(n) {
+      var el = document.getElementById('fav-count');
+      if (el && !isNaN(n)) el.textContent = Math.max(0, n);
+    }
+
+    // Removing from the Favourites page goes through htmx.
+    document.body.addEventListener('htmx:afterRequest',
+      function(e) {
+        var xhr = e.detail && e.detail.xhr;
+        if (!xhr) return;
+        var n = parseInt(xhr.getResponseHeader('X-Fav-Count'), 10);
+        setFavCount(n);
+      });
+
+    // Which items are favourited ("type:id"), so checkboxes show the truth.
+    var favKeys = new Set(
+      JSON.parse(document.getElementById('fav-keys').textContent || '[]')
+    );
+    function syncFavChecks() {
+      document.querySelectorAll('.fav-checkbox').forEach(function(cb) {
+        var on = favKeys.has(cb.dataset.type + ':' + cb.dataset.id);
+        cb.checked = on;
+        var t = cb.parentNode.querySelector('.toggle-text');
+        if (t) t.textContent = on ? 'Favourited' : 'Favourite';
+      });
+    }
+    window.syncFavChecks = syncFavChecks;
+    document.addEventListener('DOMContentLoaded', syncFavChecks);
+    document.body.addEventListener('htmx:afterSwap', syncFavChecks);
+    document.body.addEventListener('htmx:oobAfterSwap', syncFavChecks);
+
+    // Shared toggle-favourite function.
+    function toggleFav(el, type, id, name, sprite) {
+      var d = el.dataset || {};
+      type = type || d.type || 'pokemon';
+      id = id || d.id;
+      name = name || d.name;
+      sprite = sprite || d.sprite;
+      var favKey = type + ':' + id;
+      if (el.checked) favKeys.add(favKey); else favKeys.delete(favKey);
+      var csrf =
+        document.querySelector(
+          'meta[name=csrf-token]'
+        ).content;
+      var url = el.checked
+        ? '/favourites/add/'
+        : '/favourites/remove/';
+      var body = new URLSearchParams();
+      body.append('type', type);
+      body.append('id', id);
+      body.append('name', name);
+      if (sprite) body.append('sprite', sprite);
+      fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrf,
+          'Content-Type':
+            'application/x-www-form-urlencoded',
+        },
+        body: body.toString(),
+      }).then(function(r) {
+        setFavCount(parseInt(r.headers.get('X-Fav-Count'), 10));
+      });
+      var textEl =
+        el.parentNode.querySelector('.toggle-text');
+      if (textEl) {
+        textEl.textContent = el.checked
+          ? 'Favourited' : 'Favourite';
+      }
+    }
+  </script>
+</body>
+</html>

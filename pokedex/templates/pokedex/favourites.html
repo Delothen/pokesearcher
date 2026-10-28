@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}Favourites · PokéSearcher{% endblock %}
+{% block content %}
+<h1>Your Favourites</h1>
+<div class="search-wrapper fav-search-wrapper" id="fav-search-wrapper"{% if not groups %} hidden{% endif %}>
+  <form class="search-form"
+        id="fav-search-form"
+        action="{% url 'pokedex:favourites' %}"
+        onsubmit="return false;">
+    <input type="text" name="q"
+           id="fav-search"
+           placeholder="Search favourites…"
+           autocomplete="off">
+    <button type="submit">Search</button>
+  </form>
+  <div id="suggestions" class="suggestions"></div>
+</div>
+<p class="empty" id="fav-no-match" hidden>
+  No favourites match. Change the search or the filters to see more.
+</p>
+<div id="favourites-list">
+  {% include "pokedex/favourites_list.html" %}
+</div>
+<script>
+(function() {
+  var wrapper = document.getElementById('fav-search-wrapper');
+  var inp = document.getElementById('fav-search');
+  var form = document.getElementById('fav-search-form');
+  var sug = document.getElementById('suggestions');
+  var list = document.getElementById('favourites-list');
+  var noMatch = document.getElementById('fav-no-match');
+  var query = '';            // the text the list is narrowed to (after Search)
+  var activeIdx = -1;
+
+  var KIND_LABEL = {
+    pokemon: 'Pokémon', move: 'Move', ability: 'Ability', item: 'Item',
+    sprite: 'Sprite', card: 'Trading card', compare: 'Comparison'
+  };
+
+  function norm(s) {
+    return String(s || '').toLowerCase().replace(/[\s_]+/g, '-')
+      .replace(/[^a-z0-9\-]/g, '');
+  }
+  function items() {
+    return Array.prototype.slice.call(list.querySelectorAll('.fav-item'));
+  }
+
+  // ---- what each favourite can be filtered by -----------------------------
+  // The Pokémon, move, ability and item filter data (the same the other
+  // search bars use) looked up by each favourite's name. A sprite or a
+  // trading card is filtered like its Pokémon, a comparison by the two
+  // things it compares.
+  function lookup(map, name) {
+    var n = norm(name);
+    return map[n] || map[n.replace(/-+/g, '-')] || null;
+  }
+  function indexOf(obj) {
+    var out = {};
+    Object.keys(obj || {}).forEach(function(k) { out[norm(k)] = obj[k]; });
+    return out;
+  }
+  function attrs(kind, e) {
+    if (!e) return {};
+    if (kind === 'pokemon') {
+      return { t: [].concat(e.t || []), g: e.g, x: e.x, f: e.f };
+    }
+    if (kind === 'move') return { t: e.t ? [e.t] : [], mc: e.c, g: e.g };
+    if (kind === 'ability') return { g: e.g };
+    if (kind === 'item') return { ic: e.c, u: e.u, it: e.t };
+    return {};
+  }
+  function buildData() {
+    return Promise.all(['pokemon', 'move', 'ability', 'item'].map(function(k) {
+      return pksFilters.load(k).then(indexOf);
+    })).then(function(all) {
+      var maps = { pokemon: all[0], move: all[1], ability: all[2], item: all[3] };
+      var data = {};
+      function side(kind, name) {
+        return attrs(kind, lookup(maps[kind] || {}, name));
+      }
+      items().forEach(function(el) {
+        var d = el.dataset, kind = d.kind, entry;
+        if (kind === 'compare') {
+          var mode = d.mode || 'pokemon';
+          entry = { k: kind, sides: [side(mode, d.a), side(mode, d.b)] };
+          // the sides count for the options the filters offer
+          data['#side:' + d.key + ':a'] = entry.sides[0];
+          data['#side:' + d.key + ':b'] = entry.sides[1];
+        } else if (kind === 'sprite') {
+          entry = side('pokemon', d.label);
+        } else if (kind === 'card') {
+          entry = side('pokemon', d.ref || d.label);
+        } else {
+          entry = side(kind, d.label);
+        }
+        if (kind !== 'compare') entry.k = kind;
+        data[d.key] = entry;
+      });
+      return data;
+    }).catch(function() { return {}; });
+  }
+
+  // The Filters button sits on the search row, like the other tabs.
+  var F = pksFilters.attach({
+    kind: 'favourites',
+    data: buildData,
+    before: wrapper,
+    onChange: function() { apply(); renderSuggestions(inp.value.trim()); },
+    onLoad: function() { apply(); }
+  });
+
+  function textMatches(el, q) {
+    if (!q) return true;
+    var label = el.dataset.label || '';
+    if (el.dataset.kind === 'card' && el.dataset.ref) {
+      label = el.dataset.ref + ' ' + label;
+    }
+    return pksScore(label, q) > 0;
+  }
+  function passes(el, q) {
+    return textMatches(el, q) && (!F.active() || F.matches(el.dataset.key));
+  }
+
+  // Narrow the list below to what the search text and the filters allow.
+  function apply() {
+    var shown = 0;
+    items().forEach(function(el) {
+      var ok = passes(el, query);
+      el.hidden = !ok;
+      if (ok) shown++;
+    });
+    list.querySelectorAll('.fav-category').forEach(function(cat) {
+      cat.hidden = !cat.querySelector('.fav-item:not([hidden])');
+    });
+    var total = items().length;
+    noMatch.hidden = !(total > 0 && shown === 0);
+    wrapper.hidden = total === 0;
+    if (total === 0) F.hide(); else F.show();
+  }
+
+  // ---- suggestions: only things that are in the favourites ---------------
+  function suggestionList(q) {
+    var seen = {}, out = [];
+    items().forEach(function(el) {
+      var d = el.dataset;
+      if (F.active() && !F.matches(d.key)) return;
+      var id = d.kind + '|' + (d.label || '').toLowerCase();
+      if (seen[id]) return;
+      seen[id] = true;
+      var s = q ? pksScore(d.label, q) : 50;
+      if (s > 0) out.push({ el: el, s: s });
+    });
+    out.sort(function(a, b) { return b.s - a.s; });
+    return out.map(function(x) { return x.el; });
+  }
+  function renderSuggestions(q) {
+    sug.innerHTML = '';
+    activeIdx = -1;
+    var found = suggestionList(q);
+    if (!found.length) {
+      if (F.active()) {
+        sug.style.display = 'block';
+        sug.appendChild(F.emptyNote());
+      } else {
+        sug.style.display = 'none';
+      }
+      return;
+    }
+    sug.style.display = 'block';
+    found.forEach(function(el) {
+      var div = document.createElement('div');
+      div.className = 'suggestion-item';
+      var sprite = el.dataset.sprite;
+      if (sprite && el.dataset.kind !== 'card') {
+        var img = document.createElement('img');
+        img.src = sprite;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.onerror = function() { img.remove(); };
+        div.appendChild(img);
+      }
+      var span = document.createElement('span');
+      var label = el.dataset.label || '';
+      span.textContent = label.charAt(0).toUpperCase() + label.slice(1);
+      div.appendChild(span);
+      var kind = document.createElement('small');
+      kind.className = 'suggestion-kind';
+      kind.textContent = KIND_LABEL[el.dataset.kind] || el.dataset.kind;
+      div.appendChild(kind);
+      div.addEventListener('click', function() { choose(el.dataset.label); });
+      sug.appendChild(div);
+    });
+  }
+  function choose(name) {
+    inp.value = name;
+    sug.style.display = 'none';
+    activeIdx = -1;
+    query = name;
+    apply();
+  }
+  function highlight(idx) {
+    var rows = sug.querySelectorAll('.suggestion-item');
+    rows.forEach(function(r, i) {
+      r.classList.toggle('suggestion-active', i === idx);
+    });
+    if (rows[idx]) rows[idx].scrollIntoView({ block: 'nearest' });
+  }
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var rows = sug.querySelectorAll('.suggestion-item');
+    if (activeIdx >= 0 && rows[activeIdx]) {
+      inp.value = rows[activeIdx].querySelector('span').textContent;
+    }
+    query = inp.value.trim();
+    sug.style.display = 'none';
+    activeIdx = -1;
+    apply();
+  });
+  inp.addEventListener('input', function() {
+    renderSuggestions(inp.value.trim());
+    // emptying the box shows every favourite again
+    if (!inp.value.trim() && query) { query = ''; apply(); }
+  });
+  inp.addEventListener('focus', function() {
+    renderSuggestions(inp.value.trim());
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (sug.style.display !== 'block') return;
+    var rows = sug.querySelectorAll('.suggestion-item');
+    if (!rows.length) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = (activeIdx + 1) % rows.length;
+      highlight(activeIdx);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = (activeIdx - 1 + rows.length) % rows.length;
+      highlight(activeIdx);
+    } else if (e.key === 'Escape') {
+      sug.style.display = 'none';
+    }
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-wrapper, .filter-bar')) {
+      sug.style.display = 'none';
+    }
+  });
+
+  // Removing a favourite swaps the list: keep the search and filters on it.
+  document.body.addEventListener('htmx:afterSwap', function(e) {
+    if (e.target === list || list.contains(e.target)) {
+      apply();
+      renderSuggestions(document.activeElement === inp ? inp.value.trim() : '');
+      if (document.activeElement !== inp) sug.style.display = 'none';
+    }
+  });
+  apply();
+})();
+</script>
+{% endblock %}

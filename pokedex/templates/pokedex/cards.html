@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Cards · PokéSearcher{% endblock %}
+{% block content %}
+<section class="search-section">
+  <h1>Search Trading Cards</h1>
+  <div class="search-wrapper">
+    <form class="search-form"
+          action="{% url 'pokedex:cards' %}"
+          id="cards-search-form"
+          hx-get="{% url 'pokedex:cards' %}" hx-push-url="true"
+          hx-target="#results"
+          hx-swap="innerHTML"
+          hx-indicator="#cards-loading">
+      <input type="text" name="q"
+             id="cards-search"
+             value="{{ q }}"
+             placeholder="Type a Pokémon name…"
+             autocomplete="off" required>
+      <button type="submit">Search</button>
+    </form>
+    <div id="suggestions" class="suggestions"></div>
+  </div>
+  {% include "pokedex/_last_search.html" %}
+  <p class="cards-note">
+    Cards are listed from most expensive to least expensive, using the
+    TCGplayer price in USD (or the Cardmarket price in EUR when there is
+    no USD price). Cards with no price come last.
+  </p>
+  <p id="cards-loading" class="empty htmx-indicator">
+    Fetching cards and prices… this can take a few seconds.
+  </p>
+  <div id="results">
+    {% if searched %}
+      {% include "pokedex/cards_result.html" %}
+    {% endif %}
+  </div>
+</section>
+<script>
+(function() {
+  var allP = [];
+  var inp = document.getElementById('cards-search');
+  var sug = document.getElementById('suggestions');
+  var form = document.getElementById('cards-search-form');
+  var activeIdx = -1;
+
+  // Filter bar (Type, Generation...) above the search box; it narrows the
+  // suggestions below. Typing a name and pressing Search still searches it.
+  var F = pksFilters.attach({
+    kind: 'pokemon',
+    before: inp.closest('.search-wrapper'),
+    onChange: function() { render(inp.value.trim()); },
+    onLoad: function() {
+      if (document.activeElement === inp) render(inp.value.trim());
+    }
+  });
+  function showEmpty() {
+    if (F.active()) {
+      sug.style.display = 'block';
+      sug.appendChild(F.emptyNote());
+    } else {
+      sug.style.display = 'none';
+    }
+  }
+
+  fetch('/api/pokemon-list/')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      allP = d.sort(function(a, b) {
+        return a.name.localeCompare(b.name);
+      });
+    });
+
+  function render(q) {
+    sug.innerHTML = '';
+    activeIdx = -1;
+    var src = F.apply(allP);
+    var matches = !q ? src : src
+      .map(function(p) { return { p: p, s: pksScore(p.name, q) }; })
+      .filter(function(x) { return x.s > 0; })
+      .sort(function(a, b) { return b.s - a.s; })
+      .map(function(x) { return x.p; });
+    if (matches.length === 0) {
+      showEmpty();
+      return;
+    }
+    sug.style.display = 'block';
+    matches.forEach(function(p) { sug.appendChild(makeItem(p)); });
+  }
+
+  function makeItem(p) {
+    var div = document.createElement('div');
+    div.className = 'suggestion-item';
+    var img = document.createElement('img');
+    img.src = p.sprite;
+    img.onerror = function() { pksSuggestSprite(img, p); };
+    if (p.sprite_3d) img.classList.add('sprite-3d');
+    img.alt = '';
+    img.loading = 'lazy';
+    var span = document.createElement('span');
+    span.textContent = p.name;
+    div.appendChild(img);
+    div.appendChild(span);
+    div.addEventListener('click', function() {
+      inp.value = p.name;
+      sug.style.display = 'none';
+      form.requestSubmit();
+    });
+    return div;
+  }
+
+  function highlight(idx) {
+    var items = sug.querySelectorAll('.suggestion-item');
+    items.forEach(function(el, i) {
+      el.classList.toggle('suggestion-active', i === idx);
+    });
+    if (items[idx]) items[idx].scrollIntoView({ block: 'nearest' });
+  }
+
+  inp.addEventListener('input', function() { render(inp.value.trim()); });
+  inp.addEventListener('focus', function() {
+    if (!inp.value.trim() && allP.length > 0) render('');
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      var items = sug.querySelectorAll('.suggestion-item');
+      if (sug.style.display === 'block' && activeIdx >= 0 && items[activeIdx]) {
+        e.preventDefault();
+        inp.value = items[activeIdx].querySelector('span').textContent;
+        sug.style.display = 'none';
+        form.requestSubmit();
+        return;
+      }
+      sug.style.display = 'none';
+      return;
+    }
+    if (sug.style.display !== 'block') return;
+    var list = sug.querySelectorAll('.suggestion-item');
+    if (list.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = (activeIdx + 1) % list.length;
+      highlight(activeIdx);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx = (activeIdx - 1 + list.length) % list.length;
+      highlight(activeIdx);
+    } else if (e.key === 'Escape') {
+      sug.style.display = 'none';
+    }
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-wrapper, .filter-bar')) sug.style.display = 'none';
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,41 @@
+{# One side (side = "a" or "b") of an ability comparison. #}
+<article class="pokemon-card cmp-card cmp-ability" id="cmp-{{ side }}-card"
+         style="--cmp-rows: 3">
+  <section class="cmp-section cmp-controls">
+    {% with favcb="ability-fav-"|add:side %}
+    {% if ab.games %}
+    <div class="game-select-row">
+      <div class="game-buttons" id="cmp-{{ side }}-games">
+        {% for g in ab.games %}
+        <button type="button" class="game-btn"
+                data-vg="{{ g.key }}"
+                onclick="setCmpAbilityGame('{{ side }}', this)">{{ g.label }}</button>
+        {% endfor %}
+      </div>
+      <div class="toggle-row">
+        {% include "pokedex/_fav_toggle.html" with cb_id=favcb fav_type="ability" fav_id=ab.name fav_name=ab.name %}
+      </div>
+    </div>
+    {% else %}
+    <div class="toggle-row">
+      {% include "pokedex/_fav_toggle.html" with cb_id=favcb fav_type="ability" fav_id=ab.name fav_name=ab.name %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </section>
+
+  <section class="cmp-section cmp-head">
+    <div class="pokemon-top">
+      <div>
+        <h2>{{ ab.name|capfirst }}
+          <span class="dex">#{{ ab.id }}</span>
+        </h2>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp-section move-effect-box" style="grid-row: 3">
+    <h3>Effect</h3>
+    <p class="move-effect">{{ ab.effect|default:"No effect text available." }}</p>
+  </section>
+</article>

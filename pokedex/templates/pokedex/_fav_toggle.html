@@ -1,0 +1,14 @@
+<label class="fav-toggle">
+  <input type="checkbox"
+         {% if cb_id %}id="{{ cb_id }}"{% endif %}
+         class="fav-checkbox"
+         data-type="{{ fav_type }}"
+         data-id="{{ fav_id }}"
+         data-name="{{ fav_name }}"
+         {% if fav_sprite %}data-sprite="{{ fav_sprite }}"
+         data-default-sprite="{{ fav_sprite }}"{% endif %}
+         onchange="toggleFav(this)">
+  {% if fav_label %}<span class="fav-for">{{ fav_label }}</span>{% endif %}
+  <span class="toggle-text">Favourite</span>
+  <span class="toggle-slider"></span>
+</label>

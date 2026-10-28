@@ -1,0 +1,166 @@
+{% if cards %}
+<p class="cards-count">
+  {{ cards|length }} card{{ cards|length|pluralize }}{% if q %} for {{ q|capfirst }}{% endif %}
+</p>
+<div class="card-grid">
+  {% for c in cards %}
+  <div class="tcg-card"
+       role="button" tabindex="0"
+       data-image="{{ c.image }}"
+       data-alt="{{ c.image_alt }}"
+       data-name="{{ c.name }}"
+       data-set="{{ c.set|default:'' }}"
+       data-rarity="{{ c.rarity|default:'' }}"
+       data-id="{{ c.id }}"
+       data-fav-name="{{ c.fav_name }}"
+       data-price="{% if c.tcgplayer is not None %}$ {{ c.tcgplayer }}{% elif c.cardmarket is not None %}€ {{ c.cardmarket }}{% endif %}">
+    <img src="{{ c.image }}"
+         data-alt="{{ c.image_alt }}"
+         onerror="cardImgError(this)"
+         loading="lazy"
+         alt="{{ c.name }}{% if c.set %} ({{ c.set }}){% endif %}">
+    <div class="tcg-name">{{ c.name }}</div>
+    {% if c.set %}<div class="tcg-set">{{ c.set }}</div>{% endif %}
+    {% if c.rarity %}<div class="tcg-rarity">{{ c.rarity }}</div>{% endif %}
+    <div class="tcg-prices">
+      {% if c.tcgplayer is not None %}<span class="price usd">$ {{ c.tcgplayer }}</span>{% endif %}
+      {% if c.cardmarket is not None %}<span class="price eur">€ {{ c.cardmarket }}</span>{% endif %}
+      {% if c.tcgplayer is None and c.cardmarket is None %}<span class="price none">No price</span>{% endif %}
+    </div>
+    <label class="fav-toggle">
+      <input type="checkbox"
+             class="fav-checkbox"
+             data-type="card"
+             data-id="{{ c.id }}"
+             data-name="{{ c.fav_name }}"
+             data-sprite="{{ c.image }}"
+             onchange="toggleFav(this)">
+      <span class="toggle-text">Favourite</span>
+      <span class="toggle-slider"></span>
+    </label>
+  </div>
+  {% endfor %}
+</div>
+
+<div id="card-lightbox" class="lightbox" style="display:none;">
+  <div class="lightbox-content">
+    <button type="button" class="lightbox-close" aria-label="Close"
+            onclick="closeCardLightbox()">✕</button>
+    <img id="card-lightbox-img" class="card-big" src="" alt="">
+    <div class="lightbox-footer">
+      <span id="card-lightbox-label" class="lightbox-label"></span>
+      <label class="fav-toggle">
+        <input type="checkbox"
+               id="card-lightbox-fav"
+               class="fav-checkbox"
+               data-type="card"
+               onchange="toggleFav(this); syncFavChecks();">
+        <span class="toggle-text">Favourite</span>
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // The popup lives under <body> while open (<main> has a backdrop-filter that
+  // breaks position: fixed); drop the copy left by the previous search.
+  document.querySelectorAll('body > #card-lightbox').forEach(function(n) {
+    n.remove();
+  });
+  var lb = document.getElementById('card-lightbox');
+  var img = document.getElementById('card-lightbox-img');
+  var label = document.getElementById('card-lightbox-label');
+  var fav = document.getElementById('card-lightbox-fav');
+
+  function place() {
+    var top = 0, bottom = 0;
+    var bar = document.querySelector('.topbar');
+    if (bar) {
+      top = bar.getBoundingClientRect().bottom;
+      if (!document.body.classList.contains('light-mode')) {
+        var cs = getComputedStyle(document.body);
+        var strips = (parseFloat(cs.getPropertyValue('--topbar-h')) || 0) +
+                     (parseFloat(cs.getPropertyValue('--strips-h')) || 0);
+        top = Math.max(top, strips);
+      }
+    }
+    var foot = document.querySelector('.site-footer');
+    if (foot) {
+      bottom = Math.max(0, window.innerHeight - foot.getBoundingClientRect().top);
+    }
+    lb.style.setProperty('--lb-top', Math.max(0, top) + 'px');
+    lb.style.setProperty('--lb-bottom', bottom + 'px');
+  }
+  function isOpen() { return lb.style.display !== 'none'; }
+
+  window.closeCardLightbox = function() { lb.style.display = 'none'; };
+
+  function open(card) {
+    var d = card.dataset;
+    if (lb.parentNode !== document.body) document.body.appendChild(lb);
+    delete img.dataset.triedAlt;
+    img.dataset.alt = d.alt || '';
+    img.onerror = function() {
+      if (img.dataset.alt && !img.dataset.triedAlt) {
+        img.dataset.triedAlt = '1';
+        img.src = img.dataset.alt;
+      }
+    };
+    img.src = d.image;
+    img.alt = d.name;
+    label.textContent = [d.name, d.set, d.price].filter(Boolean).join(' · ');
+    fav.dataset.id = d.id;
+    fav.dataset.name = d.favName;
+    fav.dataset.sprite = d.image;
+    if (window.syncFavChecks) window.syncFavChecks();
+    place();
+    lb.style.display = 'flex';
+  }
+
+  document.querySelectorAll('.card-grid .tcg-card').forEach(function(card) {
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.fav-toggle')) return;
+      open(card);
+    });
+    card.addEventListener('keydown', function(e) {
+      if (e.target !== card) return;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        open(card);
+      }
+    });
+  });
+
+  // These live on document/window: swap out the previous search's copies.
+  if (window.__cardLbClick) document.removeEventListener('click', window.__cardLbClick);
+  if (window.__cardLbKey) document.removeEventListener('keydown', window.__cardLbKey);
+  if (window.__cardLbResize) window.removeEventListener('resize', window.__cardLbResize);
+  window.__cardLbClick = function(e) {
+    if (!isOpen()) return;
+    if (e.target.closest('.lightbox-content') || e.target.closest('.tcg-card')) return;
+    window.closeCardLightbox();
+  };
+  window.__cardLbKey = function(e) {
+    if (e.key === 'Escape' && isOpen()) window.closeCardLightbox();
+  };
+  window.__cardLbResize = function() { if (isOpen()) place(); };
+  document.addEventListener('click', window.__cardLbClick);
+  document.addEventListener('keydown', window.__cardLbKey);
+  window.addEventListener('resize', window.__cardLbResize);
+
+  if (window.syncFavChecks) window.syncFavChecks();
+})();
+</script>
+{% elif searched %}
+<p class="empty">
+  {% if cards_reason == 'unreachable' %}
+    The card database (TCGdex) could not be reached right now. Please try again in a moment.
+  {% elif cards_reason == 'no_artwork' %}
+    No trading cards with artwork found for "{{ q }}". TCGdex lists cards under that name, but none of them have a picture.
+  {% else %}
+    No trading cards with artwork found for "{{ q }}". TCGdex has no cards under that name, so check the spelling or pick a name from the suggestions.
+  {% endif %}
+</p>
+{% endif %}

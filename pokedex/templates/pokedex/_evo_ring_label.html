@@ -1,0 +1,49 @@
+{% load static %}<span class="ring-label" style="left: {{ n.lx }}%; top: {{ n.ly }}%"
+      {% if n.extra %}data-extra="1"{% endif %}
+      data-games="{{ n.games|join:' ' }}">
+  {% if n.label_groups %}
+  {% for g in n.label_groups %}
+  <span class="evo-label-group" data-games="{{ g.games|join:' ' }}"{% if not forloop.first %} hidden{% endif %}>
+  {% with labels=g.labels %}
+  {% for l in labels %}
+  <span class="evo-label" title="{{ l.title }}">
+    {% if l.item %}
+    <a class="evo-item" href="{% url 'pokedex:items' %}?q={{ l.item|urlencode }}" title="{{ l.item_name }}"><img src="{{ l.item_sprite }}" alt="{{ l.item_name }}" onerror="evoItemFallback(this)"><span class="evo-item-name" hidden>{{ l.item_name }}</span></a>
+    {% elif l.dynamax %}
+    <img class="evo-dynamax" src="{% static 'pokedex/dynamax.png' %}" alt="Dynamax" title="{{ l.title }}">
+    {% endif %}
+    {% if l.special %}
+    <a class="evo-text evo-special" href="#tab-gameinfo" title="{{ l.title }}"
+       onclick="showPokemonTab('gameinfo'); return false;">{{ l.text }}</a>
+    <a class="evo-sub evo-special" href="#tab-gameinfo"
+       onclick="showPokemonTab('gameinfo'); return false;">{{ l.sub }}</a>
+    {% else %}
+    {% if l.text and not l.move %}<span class="evo-text">{{ l.text }}</span>{% endif %}
+    {% if l.sub %}<span class="evo-sub">{{ l.sub }}</span>{% endif %}
+    {% endif %}
+  </span>
+  {% endfor %}
+  {% endwith %}
+  </span>
+  {% endfor %}
+  {% else %}
+  {% for l in n.labels %}
+  <span class="evo-label" title="{{ l.title }}">
+    {% if l.item %}
+    <a class="evo-item" href="{% url 'pokedex:items' %}?q={{ l.item|urlencode }}" title="{{ l.item_name }}"><img src="{{ l.item_sprite }}" alt="{{ l.item_name }}" onerror="evoItemFallback(this)"><span class="evo-item-name" hidden>{{ l.item_name }}</span></a>
+    {% elif l.dynamax %}
+    <img class="evo-dynamax" src="{% static 'pokedex/dynamax.png' %}" alt="Dynamax" title="{{ l.title }}">
+    {% endif %}
+    {% if l.special %}
+    <a class="evo-text evo-special" href="#tab-gameinfo" title="{{ l.title }}"
+       onclick="showPokemonTab('gameinfo'); return false;">{{ l.text }}</a>
+    <a class="evo-sub evo-special" href="#tab-gameinfo"
+       onclick="showPokemonTab('gameinfo'); return false;">{{ l.sub }}</a>
+    {% else %}
+    {% if l.text and not l.move %}<span class="evo-text">{{ l.text }}</span>{% endif %}
+    {% if l.sub %}<span class="evo-sub">{{ l.sub }}</span>{% endif %}
+    {% endif %}
+  </span>
+  {% endfor %}
+  {% endif %}
+</span>

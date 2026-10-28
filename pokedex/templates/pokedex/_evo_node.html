@@ -1,0 +1,84 @@
+{% load static %}{% comment %}
+  One Pokémon button of the evolution line, then the arrows leading on from it
+  (each with what makes it evolve above it) and the Pokémon they lead to.
+  Includes itself for every step of the line.
+{% endcomment %}
+<div class="evo-group">
+  <a class="evo-node{% if node.current %} evo-current{% endif %}{% if node.mega %} evo-mega{% endif %}"
+     data-form="{{ node.form }}"
+     data-slug="{{ node.slug }}"
+     data-gen="{{ node.gen }}"
+     {% if node.mega %}data-mega="1"{% endif %}
+     {% if node.regional %}data-regional="1"{% endif %}
+     {% if node.gated %}data-gated="1"{% endif %}
+     data-games="{{ node.games|join:' ' }}"
+     data-base="{% url 'pokedex:search' %}?q={{ node.q|urlencode }}"
+     {% if node.current %}aria-current="true" aria-disabled="true" tabindex="-1"
+     {% else %}href="{% url 'pokedex:search' %}?q={{ node.q|urlencode }}"{% endif %}>
+    {% if node.sprite %}<img class="evo-sprite" src="{{ node.sprite }}" data-fallback="{{ node.sprite_alt }}" alt="" loading="lazy" onerror="pksSpriteFallback(this)">{% endif %}
+    <span class="evo-name">{{ node.name }}</span>
+  </a>
+  {% if node.branches %}
+  <div class="evo-branches">
+    {% for b in node.branches %}
+    <div class="evo-branch">
+      <div class="evo-arrow">
+        <div class="evo-labels">
+          {% if b.label_groups %}
+          {% for g in b.label_groups %}
+          <div class="evo-label-group" data-games="{{ g.games|join:' ' }}"{% if not forloop.first %} hidden{% endif %}>
+          {% with labels=g.labels %}
+          {% for l in labels %}
+          <span class="evo-label" title="{{ l.title }}">
+            {% if l.item %}
+            <a class="evo-item" href="{% url 'pokedex:items' %}?q={{ l.item|urlencode }}" title="{{ l.item_name }}"><img src="{{ l.item_sprite }}" alt="{{ l.item_name }}" onerror="evoItemFallback(this)"><span class="evo-item-name" hidden>{{ l.item_name }}</span></a>
+            {% elif l.dynamax %}
+            <img class="evo-dynamax" src="{% static 'pokedex/dynamax.png' %}" alt="Dynamax" title="{{ l.title }}">
+            {% elif l.move %}
+            <a class="evo-item evo-move" href="{% url 'pokedex:moves' %}?q={{ l.move|urlencode }}">{{ l.text }}</a>
+            {% endif %}
+            {% if l.special %}
+            <a class="evo-text evo-special" href="#tab-gameinfo" title="{{ l.title }}"
+               onclick="showPokemonTab('gameinfo'); return false;">{{ l.text }}</a>
+            <a class="evo-sub evo-special" href="#tab-gameinfo"
+               onclick="showPokemonTab('gameinfo'); return false;">{{ l.sub }}</a>
+            {% else %}
+            {% if l.text and not l.move %}<span class="evo-text">{{ l.text }}</span>{% endif %}
+            {% if l.sub %}<span class="evo-sub">{{ l.sub }}</span>{% endif %}
+            {% endif %}
+          </span>
+          {% endfor %}
+          {% endwith %}
+          </div>
+          {% endfor %}
+          {% else %}
+          {% for l in b.labels %}
+          <span class="evo-label" title="{{ l.title }}">
+            {% if l.item %}
+            <a class="evo-item" href="{% url 'pokedex:items' %}?q={{ l.item|urlencode }}" title="{{ l.item_name }}"><img src="{{ l.item_sprite }}" alt="{{ l.item_name }}" onerror="evoItemFallback(this)"><span class="evo-item-name" hidden>{{ l.item_name }}</span></a>
+            {% elif l.dynamax %}
+            <img class="evo-dynamax" src="{% static 'pokedex/dynamax.png' %}" alt="Dynamax" title="{{ l.title }}">
+            {% elif l.move %}
+            <a class="evo-item evo-move" href="{% url 'pokedex:moves' %}?q={{ l.move|urlencode }}">{{ l.text }}</a>
+            {% endif %}
+            {% if l.special %}
+            <a class="evo-text evo-special" href="#tab-gameinfo" title="{{ l.title }}"
+               onclick="showPokemonTab('gameinfo'); return false;">{{ l.text }}</a>
+            <a class="evo-sub evo-special" href="#tab-gameinfo"
+               onclick="showPokemonTab('gameinfo'); return false;">{{ l.sub }}</a>
+            {% else %}
+            {% if l.text and not l.move %}<span class="evo-text">{{ l.text }}</span>{% endif %}
+            {% if l.sub %}<span class="evo-sub">{{ l.sub }}</span>{% endif %}
+            {% endif %}
+          </span>
+          {% endfor %}
+          {% endif %}
+        </div>
+        <span class="evo-arrow-glyph" aria-hidden="true"></span>
+      </div>
+      {% include "pokedex/_evo_node.html" with node=b.node %}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>

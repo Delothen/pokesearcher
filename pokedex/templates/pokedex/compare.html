@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}Compare · PokéSearcher{% endblock %}
+{% block content %}
+<div class="compare-head">
+<h1>Compare</h1>
+<div class="compare-top">
+  <div class="sub-tabs">
+    <button class="sub-tab{% if mode == 'pokemon' or not mode %} active{% endif %}"
+            id="tab-pokemon"
+            onclick="setCompareMode('pokemon')">
+      Pokémon
+    </button>
+    <button class="sub-tab{% if mode == 'move' %} active{% endif %}"
+            id="tab-move"
+            onclick="setCompareMode('move')">
+      Moves
+    </button>
+    <button class="sub-tab{% if mode == 'ability' %} active{% endif %}"
+            id="tab-ability"
+            onclick="setCompareMode('ability')">
+      Abilities
+    </button>
+    <button class="sub-tab{% if mode == 'item' %} active{% endif %}"
+            id="tab-item"
+            onclick="setCompareMode('item')">
+      Items
+    </button>
+  </div>
+  <div id="fav-slot" class="fav-slot">
+    {% include "pokedex/_fav_items.html" %}
+  </div>
+</div>
+</div>
+<input type="hidden"
+       id="mode-input"
+       value="{{ mode|default:'pokemon' }}">
+
+<div class="search-wrapper">
+    <form class="search-form compare-form"
+        action="{% url 'pokedex:compare' %}"
+        id="compare-form"
+        hx-get="{% url 'pokedex:compare' %}" hx-push-url="true"
+        hx-trigger="submit" hx-target="#results" hx-swap="innerHTML">
+    <input type="hidden" name="mode" id="mode-name-input"
+           value="{{ mode|default:'pokemon' }}">
+    <div class="sug-wrap">
+      <input type="text" name="a" id="compare-a" value="{{ a }}"
+             placeholder="{% if mode == 'move' %}Move A{% elif mode == 'ability' %}Ability A{% elif mode == 'item' %}Item A{% else %}Pokémon A{% endif %}"
+             autocomplete="off" required>
+      <div id="suggestions-a" class="suggestions"></div>
+    </div>
+    <span class="vs">vs</span>
+    <div class="sug-wrap">
+      <input type="text" name="b" id="compare-b" value="{{ b }}"
+             placeholder="{% if mode == 'move' %}Move B{% elif mode == 'ability' %}Ability B{% elif mode == 'item' %}Item B{% else %}Pokémon B{% endif %}"
+             autocomplete="off" required>
+      <div id="suggestions-b" class="suggestions"></div>
+    </div>
+    <button type="submit">Compare</button>
+  </form>
+</div>
+{% include "pokedex/_compare_last.html" %}
+
+<div id="results">
+  {% if pa or ma or abil_a or item_a or not_found or same %}
+    {% include "pokedex/compare_result.html" %}
+  {% endif %}
+</div>
+
+<script>
+var allP = [];
+var allM = [];
+var allA = [];
+var allI = [];
+
+fetch('/api/pokemon-list/')
+  .then(function(r) { return r.json(); })
+  .then(function(d) {
+    allP = d.sort(function(a, b) {
+      return a.name.localeCompare(b.name);
+    });
+  });
+
+fetch('/api/move-list/')
+  .then(function(r) { return r.json(); })
+  .then(function(d) { allM = d; });
+
+fetch('/api/ability-list/')
+  .then(function(r) { return r.json(); })
+  .then(function(d) { allA = d; });
+
+fetch('/api/item-list/')
+  .then(function(r) { return r.json(); })
+  .then(function(d) { allI = d; });
+
+function curList() {
+  return ({ pokemon: allP, move: allM, ability: allA, item: allI })[curMode] || allP;
+}
+
+var activeIdx = -1;
+var curMode = '{{ mode|default:'pokemon' }}';
+
+function setCompareMode(mode) {
+  curMode = mode;
+  ['pokemon', 'move', 'ability', 'item'].forEach(function(m) {
+    document.getElementById('tab-' + m)
+      .classList.toggle('active', m === mode);
+  });
+  document
+    .getElementById('mode-input')
+    .value = mode;
+  document
+    .getElementById('mode-name-input')
+    .value = mode;
+  var a =
+    document.getElementById('compare-a');
+  var b =
+    document.getElementById('compare-b');
+  // Clear inputs when switching tabs.
+  a.value = '';
+  b.value = '';
+  var label = ({ pokemon: 'Pokémon', move: 'Move',
+                 ability: 'Ability', item: 'Item' })[mode];
+  a.placeholder = label + ' A';
+  b.placeholder = label + ' B';
+  // Clear results.
+  document
+    .getElementById('results')
+    .innerHTML = '';
+  document
+    .getElementById('fav-slot')
+    .innerHTML = '';
+  // Hide suggestion boxes.
+  document
+    .getElementById('suggestions-a')
+    .style.display = 'none';
+  document
+    .getElementById('suggestions-b')
+    .style.display = 'none';
+  // Show only the last search of the selected sub-tab.
+  document.querySelectorAll('.last-search[id^="last-"]')
+    .forEach(function(el) {
+      el.hidden = el.id !== 'last-' + mode || !el.querySelector('a');
+    });
+  syncFilters();
+}
+
+// The Moves list of each Pokémon card (its text box, Filters button and game
+// buttons) is wired up by the script in compare_result.html, which runs
+// every time a comparison is shown.
+
+// One filter bar per kind of comparison (Pokémon, Moves, Abilities, Items),
+// created the first time it is needed; only the current one is visible.
+var cmpFilters = {};
+var lastBox = null;   // the suggestion box last used, redrawn on a filter change
+function curF() {
+  var mode = curMode;
+  if (!cmpFilters[mode]) {
+    cmpFilters[mode] = pksFilters.attach({
+      kind: mode,
+      before: document.querySelector('.search-wrapper'),
+      onChange: function() { redrawSuggestions(); },
+      onLoad: function() {
+        if (mode === curMode && document.activeElement === inputA) {
+          redrawSuggestions();
+        }
+      }
+    });
+  }
+  return cmpFilters[mode];
+}
+function syncFilters() {
+  Object.keys(cmpFilters).forEach(function(m) {
+    cmpFilters[m].hide();
+    cmpFilters[m].reset();
+  });
+  curF().show();
+}
+// The filters belong to one search bar at a time: moving to the other bar
+// starts it from a clean slate, so a filter used to find the first Pokémon /
+// move / ability / item does not narrow the search for the second.
+var filterOwner = null;
+function useBar(inp) {
+  if (filterOwner && filterOwner !== inp) curF().reset();
+  filterOwner = inp;
+}
+function redrawSuggestions() {
+  var box = lastBox || { inp: inputA, sug: sugA };
+  sugA.style.display = 'none';
+  sugB.style.display = 'none';
+  renderSug(box.inp.value.trim(), box.sug, box.inp);
+}
+
+function scoreName(name, q) {
+    return pksScore(name, q);
+  }
+
+function getSuggestions(query) {
+  var list = curF().apply(curList());
+  var wrapped = list.map(function(item) {
+    var name =
+      (typeof item === 'string')
+      ? item : item.name;
+    return {
+      item: item,
+      name: name,
+      s: query ? scoreName(name, query) : 50
+    };
+  });
+  // Nothing typed yet: show the whole list in order.
+  if (!query) return wrapped;
+  return wrapped
+    .filter(function(x) { return x.s > 0; })
+    .sort(function(a, b) {
+      return b.s - a.s;
+    })
+    .map(function(x) { return x; });
+}
+
+function renderSug(
+  query, sugDiv, inputEl
+) {
+  sugDiv.innerHTML = '';
+  activeIdx = -1;
+  lastBox = { inp: inputEl, sug: sugDiv };
+  var matches = getSuggestions(query);
+  if (matches.length === 0) {
+    if (curF().active()) {
+      sugDiv.style.display = 'block';
+      sugDiv.appendChild(curF().emptyNote());
+    } else {
+      sugDiv.style.display = 'none';
+    }
+    return;
+  }
+  sugDiv.style.display = 'block';
+  matches.slice(0, 3).forEach(function(m) {
+    var div = document.createElement('div');
+    div.className = 'suggestion-item';
+    if (curMode === 'pokemon') {
+      var img = document.createElement('img');
+      img.src = m.item.sprite;
+      img.onerror = function() { pksSuggestSprite(img, m.item); };
+      if (m.item.sprite_3d) img.classList.add('sprite-3d');
+      img.alt = '';
+      img.loading = 'lazy';
+      var span =
+        document.createElement('span');
+      span.textContent = m.name;
+      div.appendChild(img);
+      div.appendChild(span);
+    } else {
+      div.textContent = m.name;
+    }
+    div.addEventListener('click',
+      function() {
+        inputEl.value = m.name;
+        sugDiv.style.display = 'none';
+        document
+          .getElementById('compare-form')
+          .requestSubmit();
+      });
+    sugDiv.appendChild(div);
+  });
+  var rest = matches.slice(3);
+  if (rest.length > 0) {
+    var more =
+      document.createElement('div');
+    more.className = 'suggestions-more';
+    rest.forEach(function(m) {
+      var div =
+        document.createElement('div');
+      div.className = 'suggestion-item';
+      if (curMode === 'pokemon') {
+        var img =
+          document.createElement('img');
+        img.src = m.item.sprite;
+        img.onerror = function() { pksSuggestSprite(img, m.item); };
+        if (m.item.sprite_3d) img.classList.add('sprite-3d');
+        img.alt = '';
+        img.loading = 'lazy';
+        var span =
+          document.createElement('span');
+        span.textContent = m.name;
+        div.appendChild(img);
+        div.appendChild(span);
+      } else {
+        div.textContent = m.name;
+      }
+      div.addEventListener('click',
+        function() {
+          inputEl.value = m.name;
+          sugDiv.style.display = 'none';
+          document
+            .getElementById('compare-form')
+            .requestSubmit();
+        });
+      more.appendChild(div);
+    });
+    sugDiv.appendChild(more);
+  }
+}
+
+function handleKeys(e, inputEl, sugDiv) {
+  if (e.key === 'Enter') {
+    var cur = sugDiv.querySelectorAll('.suggestion-item')[activeIdx];
+    if (activeIdx >= 0 && cur) {
+      e.preventDefault();
+      inputEl.value = cur.textContent.trim();
+      sugDiv.style.display = 'none';
+      activeIdx = -1;
+      document.getElementById('compare-form').requestSubmit();
+      return;
+    }
+    sugDiv.style.display = 'none';
+    return;
+  }
+  if (sugDiv.style.display !== 'block') return;
+  var items =
+    sugDiv.querySelectorAll('.suggestion-item');
+  if (items.length === 0) return;
+  function highlight(idx) {
+    items.forEach(function(el, i) {
+      el.classList.toggle(
+        'suggestion-active', i === idx);
+    });
+    if (items[idx])
+      items[idx].scrollIntoView(
+        { block: 'nearest' });
+  }
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    activeIdx = (activeIdx + 1) % items.length;
+    highlight(activeIdx);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    activeIdx =
+      (activeIdx - 1 + items.length)
+      % items.length;
+    highlight(activeIdx);
+  } else if (e.key === 'Escape') {
+    sugDiv.style.display = 'none';
+  }
+}
+
+var inputA =
+  document.getElementById('compare-a');
+var inputB =
+  document.getElementById('compare-b');
+var sugA =
+  document.getElementById('suggestions-a');
+var sugB =
+  document.getElementById('suggestions-b');
+
+inputA.addEventListener('input',
+  function() {
+    useBar(inputA);
+    renderSug(
+      inputA.value.trim(), sugA, inputA
+    );
+  });
+inputA.addEventListener('focus',
+  function() {
+    useBar(inputA);
+    if (!inputA.value.trim()
+       && curList().length) {
+      renderSug('', sugA, inputA);
+    }
+  });
+inputA.addEventListener('keydown',
+  function(e) {
+    handleKeys(e, inputA, sugA);
+  });
+
+inputB.addEventListener('input',
+  function() {
+    useBar(inputB);
+    renderSug(
+      inputB.value.trim(), sugB, inputB
+    );
+  });
+inputB.addEventListener('focus',
+  function() {
+    useBar(inputB);
+    if (!inputB.value.trim()
+       && curList().length) {
+      renderSug('', sugB, inputB);
+    }
+  });
+inputB.addEventListener('keydown',
+  function(e) {
+    handleKeys(e, inputB, sugB);
+  });
+
+curF();
+
+document
+  .addEventListener('click',
+    function(e) {
+      if (!e.target
+          .closest('.search-wrapper, .filter-bar')) {
+        sugA.style.display = 'none';
+        sugB.style.display = 'none';
+      }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,77 @@
+{# One side (side = "a" or "b") of an item comparison. #}
+<article class="pokemon-card cmp-card cmp-item" id="cmp-{{ side }}-card"
+         style="--cmp-rows: 5">
+  <section class="cmp-section cmp-controls">
+    {% with favcb="item-fav-"|add:side %}
+    {% if it.games %}
+    <div class="game-select-row">
+      <div class="game-buttons" id="cmp-{{ side }}-games">
+        {% for g in it.games %}
+        <button type="button" class="game-btn"
+                data-vg="{{ g.key }}"
+                data-sprites="{{ g.sprites|join:' ' }}"
+                onclick="setCmpItemGame('{{ side }}', this)">{{ g.label }}</button>
+        {% endfor %}
+      </div>
+      <div class="toggle-row">
+        {% include "pokedex/_fav_toggle.html" with cb_id=favcb fav_type="item" fav_id=it.name fav_name=it.name fav_sprite=it.sprite %}
+      </div>
+    </div>
+    {% else %}
+    <div class="toggle-row">
+      {% include "pokedex/_fav_toggle.html" with cb_id=favcb fav_type="item" fav_id=it.name fav_name=it.name fav_sprite=it.sprite %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </section>
+
+  <section class="cmp-section cmp-head">
+    <div class="pokemon-top">
+      <div class="pokemon-head">
+        {% if it.sprite %}
+        <img class="pokemon-sprite item-sprite" id="cmp-{{ side }}-sprite"
+             data-default="{{ it.sprite }}" src="{{ it.sprite }}"
+             alt="{{ it.name|capfirst }}">
+        {% endif %}
+        <div>
+          <h2>{{ it.name|capfirst }}
+          </h2>
+          <div class="types">
+            {% if it.category %}
+            <span class="type-badge">{{ it.category|capfirst }}</span>
+            {% endif %}
+            {% for tag in it.tags %}
+            <span class="type-badge item-tag item-tag-{{ tag.key }}">{{ tag.label }}</span>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp-section cmp-stats">
+    <h3>Stats</h3>
+    <ul class="stats">
+      <li>
+        <span>Cost</span>
+        <b id="cmp-{{ side }}-cost" data-default="{% if it.cost %}₽{{ it.cost }}{% else %}—{% endif %}">{% if it.cost %}₽{{ it.cost }}{% else %}—{% endif %}</b>
+      </li>
+      {% if it.where %}
+      <li id="cmp-{{ side }}-sell-row" hidden>
+        <span>Sell price</span>
+        <b id="cmp-{{ side }}-sell">—</b>
+      </li>
+      {% endif %}
+      <li>
+        <span>Fling power</span>
+        <b>{{ it.fling_power|default_if_none:"—" }}</b>
+      </li>
+    </ul>
+  </section>
+
+  <section class="cmp-section move-effect-box">
+    <h3>Effect</h3>
+    <p class="move-effect">{{ it.effect|default:"No effect text available." }}</p>
+  </section>
+</article>
+{% if it.where %}{% with wid="cmp-"|add:side|add:"-where-data" %}{{ it.where|json_script:wid }}{% endwith %}{% endif %}

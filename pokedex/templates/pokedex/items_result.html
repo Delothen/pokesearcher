@@ -1,0 +1,244 @@
+{% if not_found %}
+  <p class="empty">
+    No item found for "{{ q }}". Check the spelling, or pick a name from the suggestions.
+  </p>
+{% elif not_battle %}
+  <p class="empty">
+    "{{ q }}" isn't a battle item. This tab covers items that can be used or
+    held in battle (X items, held items, berries, Poké Balls...).
+  </p>
+{% elif item %}
+  <article class="pokemon-card">
+    <div class="game-select-row game-fav-row{% if not item.games %} title-fav-row{% endif %}">
+      {% if item.games %}
+      <div class="game-buttons" id="game-buttons">
+        {% for g in item.games %}
+          <button class="game-btn"
+                  data-vg="{{ g.key }}"
+                  data-text="{{ g.text }}"
+                  data-sprites="{{ g.sprites|join:' ' }}"
+                  onclick="setItemGame(this)">
+            {{ g.label }}
+          </button>
+        {% endfor %}
+      </div>
+      {% else %}
+      <h2 class="pokemon-title">
+        {{ item.name|capfirst }}
+      </h2>
+      {% endif %}
+      {% include "pokedex/_fav_toggle.html" with cb_id="item-fav" fav_type="item" fav_id=item.name fav_name=item.name fav_sprite=item.sprite %}
+    </div>
+    {% if item.games %}
+    <h2 class="pokemon-title">
+      {{ item.name|capfirst }}
+    </h2>
+    {% endif %}
+
+    <div class="pokemon-top">
+      <div class="pokemon-head">
+        {% if item.sprite %}
+        <img class="pokemon-sprite item-sprite"
+             id="item-sprite"
+             data-default="{{ item.sprite }}"
+             src="{{ item.sprite }}"
+             alt="{{ item.name|capfirst }}">
+        {% endif %}
+        {% if item.category or item.tags %}
+        <div class="types">
+          {% if item.category %}<span class="type-badge">{{ item.category|capfirst }}</span>{% endif %}
+          {% for tag in item.tags %}
+          <span class="type-badge item-tag item-tag-{{ tag.key }}">{{ tag.label }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <ul class="stats">
+      <li>
+        <span>Cost</span>
+        <b id="item-cost" data-default="{% if item.cost %}₽{{ item.cost }}{% else %}—{% endif %}">{% if item.cost %}₽{{ item.cost }}{% else %}—{% endif %}</b>
+      </li>
+      {% if item.where %}
+      <li id="item-sell-row" hidden>
+        <span>Sell price</span>
+        <b id="item-sell">—</b>
+      </li>
+      {% endif %}
+      <li>
+        <span>Fling power</span>
+        <b>{{ item.fling_power|default_if_none:"—" }}</b>
+      </li>
+    </ul>
+
+    {% if item.effect %}
+      <div class="move-effect-box">
+        <h3>Effect</h3>
+        <p class="move-effect">{{ item.effect }}</p>
+      </div>
+    {% endif %}
+
+    <section class="cmp-section" id="item-where-section">
+      <h3>Where to find it</h3>
+      {% if item.where %}
+      <div id="item-where"></div>
+      {% elif item.where_loaded %}
+      <p class="empty">No location information was found for this item.</p>
+      {% else %}
+      <p class="empty">
+        Locations could not be loaded right now. Try again in a minute.
+      </p>
+      {% endif %}
+    </section>
+
+    {# The Pokémon the item works on, then the Z-Moves it creates: both sit under "Where to find it". #}
+    {% if item.target_info %}
+      <div class="move-effect-box" id="item-target-box">
+        {% include "pokedex/_mon_table.html" with mons=item.target_info.mons title=item.target_info.title show_games=True %}
+        <p class="empty" id="item-target-game-note">Select a game to see which Pokémon this item works on in it.</p>
+      </div>
+      {{ item.target_info|json_script:"item-target-data" }}
+    {% endif %}
+
+    {% if item.z_moves %}
+      <div class="move-effect-box">
+        {% include "pokedex/_zmove_table.html" with z_moves=item.z_moves %}
+      </div>
+    {% endif %}
+
+
+  </article>
+  {% if item.where %}
+  {{ item.where|json_script:"item-where-data" }}
+  {% endif %}
+  {% if item.games %}
+  <script>
+    // Where the item is found and what it costs in the selected game.
+    var itemWhere = {};
+    try {
+      var wd = document.getElementById('item-where-data');
+      if (wd) itemWhere = JSON.parse(wd.textContent);
+    } catch (e) {}
+    var itemTargetInfo = null;
+    try {
+      var td = document.getElementById('item-target-data');
+      if (td) itemTargetInfo = JSON.parse(td.textContent);
+    } catch (e) {}
+    function itemWhereGroup(box, title, lines) {
+      if (!lines || !lines.length) return;
+      var h = document.createElement('h4');
+      h.className = 'pd-sub';
+      h.textContent = title;
+      var ul = document.createElement('ul');
+      ul.className = 'gi-list';
+      lines.forEach(function(line) {
+        var li = document.createElement('li');
+        var span = document.createElement('span');
+        span.textContent = line;
+        li.appendChild(span);
+        ul.appendChild(li);
+      });
+      box.appendChild(h);
+      box.appendChild(ul);
+    }
+    function renderItemWhere(vg) {
+      var w = itemWhere[vg];
+      var cost = document.getElementById('item-cost');
+      var sellRow = document.getElementById('item-sell-row');
+      var sell = document.getElementById('item-sell');
+      if (cost) {
+        var c = w && w.cost ? w.cost : '';
+        var na = /^n\/a$/i.test(c);
+        var bp = w && w.bp ? w.bp : '';
+        var vp = w && w.vp ? w.vp : '';
+        var dflt = cost.dataset.default;
+        // Champions uses Victory Points, not Poké Dollars. Never turn a
+        // Poké Dollar price into a made-up VP amount; show a VP amount only
+        // when the game data provides one.
+        if (vg === 'champions') {
+          if (vp) cost.textContent = /\bVP\b/i.test(vp) ? vp : vp + ' VP';
+          else cost.textContent = !c || na ? dflt : 'Not sold';
+        } else if (c && !na) cost.textContent = c;
+        else if (bp && (na || dflt === '—')) cost.textContent = bp;
+        else cost.textContent = !c ? dflt : 'Not sold';
+      }
+      if (sellRow && sell) {
+        var s = w && w.sell && !/^n\/a$/i.test(w.sell) ? w.sell : '';
+        sell.textContent = s || '—';
+        sellRow.hidden = !s;
+      }
+      var box = document.getElementById('item-where');
+      if (!box) return;
+      box.textContent = '';
+      if (w && (w.finite.length || w.repeatable.length)) {
+        itemWhereGroup(box, 'One-time', w.finite);
+        itemWhereGroup(box, 'Repeatable', w.repeatable);
+      } else {
+        var p = document.createElement('p');
+        p.className = 'empty';
+        p.textContent = 'No locations are listed for this game.';
+        box.appendChild(p);
+      }
+    }
+    function setItemGame(btn) {
+      if (window.pksPageMemory) pksPageMemory.set('game', btn.dataset.vg);
+      renderItemWhere(btn.dataset.vg);
+      window.monGame = btn.dataset.vg;
+      if (typeof filterMons === 'function') filterMons();
+      var targetNote = document.getElementById('item-target-game-note');
+      if (targetNote && itemTargetInfo) {
+        var gameName = btn.textContent.trim() || 'this game';
+        var names = (itemTargetInfo.mons || []).filter(function(m) {
+          return (m.games || []).indexOf(btn.dataset.vg) !== -1;
+        }).map(function(m) {
+          var n = m.label || m.name;
+          return n.charAt(0).toUpperCase() + n.slice(1);
+        });
+        var intro = {
+          evolution: 'this item is used to evolve',
+          mega: 'this item lets these Pokémon Mega Evolve',
+          form: 'this item changes the form of'
+        }[itemTargetInfo.kind] || 'this item works on';
+        var none = {
+          evolution: 'this item is not used to evolve any Pokémon',
+          mega: 'this item lets no Pokémon Mega Evolve',
+          form: 'this item does not change the form of any Pokémon'
+        }[itemTargetInfo.kind] || 'this item works on no Pokémon';
+        targetNote.textContent = names.length
+          ? 'In ' + gameName + ', ' + intro + ': ' + names.join(', ') + '.'
+          : 'In ' + gameName + ', ' + none + '.';
+      }
+      var costLabel = document.querySelector('#item-cost') && document.querySelector('#item-cost').previousElementSibling;
+      if (costLabel) costLabel.textContent = 'Cost';
+      document
+        .querySelectorAll('#game-buttons .game-btn')
+        .forEach(function(b) {
+          b.classList.toggle('active', b === btn);
+        });
+      document.getElementById('item-game-text').textContent =
+        btn.dataset.text || 'No in-game description for this game.';
+      // This game's sprite: try each candidate in turn (this game's art,
+      // then older art, then the default) until one loads.
+      var img = document.getElementById('item-sprite');
+      if (img) {
+        var list = (btn.dataset.sprites || '').split(' ').filter(Boolean);
+        if (!list.length) list = [img.dataset.default];
+        var i = 0;
+        img.onerror = function() {
+          i += 1;
+          if (i < list.length) { img.src = list[i]; }
+          else { img.onerror = null; }
+        };
+        if (img.getAttribute('src') !== list[0]) img.src = list[0];
+      }
+    }
+    // Default to the most recent game the item is in.
+    (function() {
+      var btns = document.querySelectorAll('#game-buttons .game-btn');
+      var pick = window.pksPageMemory ? pksPageMemory.pick(btns, 'game') : btns[0];
+      if (pick) setItemGame(pick);
+    })();
+  </script>
+  {% endif %}
+{% endif %}

@@ -1,0 +1,95 @@
+{% comment %} Pokémon that have an ability / learn a move, laid out exactly like the
+   Moves section of the Pokémon details page.
+   Needs: mons (id, name, sprite, type1, type2), title.
+   Optional: show_hidden (adds the Hidden ability column).
+   Optional: show_games (rows carry p.games; the page picks the game by
+   setting window.monGame and calling filterMons()). {% endcomment %}
+<section class="cmp-section moves-section">
+  <h3 id="mon-heading" data-title="{{ title }}">{{ title }} ({{ mons|length }})</h3>
+  <div class="search-wrapper mon-search-wrapper" id="mon-search-wrapper">
+    <form class="search-form" onsubmit="filterMons(); return false;">
+      <input type="text"
+             id="mon-search"
+             placeholder="Search Pokémon…"
+             autocomplete="off"
+             oninput="filterMons()">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+  <div class="moves-list">
+    <table class="mon-table">
+      <thead>
+        <tr>
+          <th class="mon-col-num">#</th>
+          <th class="mon-col-sprite">Sprite</th>
+          <th class="mon-col-name">Pokémon</th>
+          <th class="mon-col-type">Type 1</th>
+          <th class="mon-col-type">Type 2</th>
+          {% if show_hidden %}<th class="mon-col-hidden">Hidden ability</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in mons %}
+        <tr class="mon-item" data-name="{{ p.name }}"{% if show_games %} data-games="{{ p.games|join:' ' }}"{% endif %}>
+          <td class="mon-num">{{ p.dex|default:p.id }}</td>
+          <td class="mon-sprite-cell">
+            <img class="mon-sprite{% if p.sprite_3d %} sprite-3d{% endif %}" src="{{ p.sprite }}" alt="{{ p.label|default:p.name|capfirst }}" loading="lazy"{% if p.sprite_alt %} data-alt="{{ p.sprite_alt }}" onerror="pksSpriteChain(this,this.dataset.alt)"{% endif %}>
+          </td>
+          <td>
+            <a class="move-link"
+               href="{% url 'pokedex:search' %}?q={{ p.name|urlencode }}">
+              {{ p.label|default:p.name|capfirst }}
+            </a>
+          </td>
+          <td>{% if p.type1 %}<span class="type-badge type-{{ p.type1 }}">{{ p.type1|capfirst }}</span>{% else %}<span class="mon-none">—</span>{% endif %}</td>
+          <td>{% if p.type2 %}<span class="type-badge type-{{ p.type2 }}">{{ p.type2|capfirst }}</span>{% else %}<span class="mon-none">—</span>{% endif %}</td>
+          {% if show_hidden %}
+          <td>{% if p.hidden %}<span class="hidden-tag">Hidden</span>{% else %}<span class="mon-none">—</span>{% endif %}</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="empty" id="no-mons" hidden>No Pokémon match that filter.</p>
+  </div>
+</section>
+<script>
+  window.monGame = '';
+  // Same Filters button (Type, Generation...) as the main Pokémon search
+  // bar; it narrows the rows below together with the text box.
+  window.monFilters = null;
+  (function() {
+    var wrap = document.getElementById('mon-search-wrapper');
+    if (wrap && window.pksFilters) {
+      window.monFilters = pksFilters.attach({
+        kind: 'pokemon',
+        before: wrap,
+        onChange: function() { filterMons(); },
+        onLoad: function() { filterMons(); }
+      });
+    }
+  })();
+  function filterMons() {
+    var q = (document.getElementById('mon-search').value || '')
+      .toLowerCase().trim();
+    var F = window.monFilters;
+    var game = window.monGame || '';
+    var shown = 0;
+    document.querySelectorAll('.mon-item').forEach(function(row) {
+      // Rows only carry data-games on pages that filter by game.
+      var inGame = !game || row.dataset.games === undefined ||
+        (' ' + row.dataset.games + ' ').indexOf(' ' + game + ' ') !== -1;
+      var show = inGame &&
+        (q === '' || row.dataset.name.indexOf(q) !== -1) &&
+        (!F || !F.active() || F.matches(row.dataset.name));
+      row.style.display = show ? '' : 'none';
+      if (show) shown++;
+    });
+    var heading = document.getElementById('mon-heading');
+    if (heading && game) {
+      heading.textContent = heading.dataset.title + ' (' + shown + ')';
+    }
+    var note = document.getElementById('no-mons');
+    if (note) note.hidden = shown > 0;
+  }
+</script>

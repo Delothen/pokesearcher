@@ -1,0 +1,12 @@
+<a class="evo-node ring-node{% if root %} ring-root{% endif %}{% if n.mega %} evo-mega{% endif %}{% if n.current %} evo-current{% endif %}"
+   style="left: {{ n.left }}%; top: {{ n.top }}%"
+   {% if n.extra %}data-extra="1"{% endif %}
+   data-form="{{ n.form }}" data-slug="{{ n.slug }}" data-gen="{{ n.gen }}"
+   {% if n.mega %}data-mega="1"{% endif %}
+   data-games="{{ n.games|join:' ' }}"
+   data-base="{% url 'pokedex:search' %}?q={{ n.q|urlencode }}"
+   {% if n.current %}aria-current="true" aria-disabled="true" tabindex="-1"
+   {% else %}href="{% url 'pokedex:search' %}?q={{ n.q|urlencode }}"{% endif %}>
+  {% if n.sprite %}<img class="evo-sprite" src="{{ n.sprite }}" data-fallback="{{ n.sprite_alt }}" alt="" loading="lazy" onerror="pksSpriteFallback(this)">{% endif %}
+  <span class="evo-name">{{ n.name }}</span>
+</a>

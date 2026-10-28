@@ -1,0 +1,17 @@
+{# The favourite slider(s) for whatever result is on screen. Shown above the search form. #}
+{% if pokemon %}
+  {% include "pokedex/_fav_toggle.html" with cb_id="pokemon-fav" fav_type="pokemon" fav_id=pokemon.name|add:"~" fav_name=pokemon.name fav_sprite=pokemon.sprite %}
+{% elif ability %}
+  {% include "pokedex/_fav_toggle.html" with cb_id="ability-fav" fav_type="ability" fav_id=ability.name fav_name=ability.name %}
+{% elif item %}
+  {% include "pokedex/_fav_toggle.html" with cb_id="item-fav" fav_type="item" fav_id=item.name fav_name=item.name fav_sprite=item.sprite %}
+{% elif pa and pb %}
+  {% include "pokedex/_fav_toggle.html" with cb_id="compare-fav" fav_type="compare" fav_id=pa.name|add:"~"|add:pb.name fav_name=pa.name|add:" vs "|add:pb.name %}
+{% elif ma and mb %}
+  {# Move / ability / item comparisons: id is "<mode>:<a>~<b>" (Pokémon ones stay "<a>~<b>"). #}
+  {% include "pokedex/_fav_toggle.html" with cb_id="compare-fav" fav_type="compare" fav_id="move:"|add:ma.name|add:"~"|add:mb.name fav_name=ma.name|add:" vs "|add:mb.name %}
+{% elif abil_a and abil_b %}
+  {% include "pokedex/_fav_toggle.html" with cb_id="compare-fav" fav_type="compare" fav_id="ability:"|add:abil_a.name|add:"~"|add:abil_b.name fav_name=abil_a.name|add:" vs "|add:abil_b.name %}
+{% elif item_a and item_b %}
+  {% include "pokedex/_fav_toggle.html" with cb_id="compare-fav" fav_type="compare" fav_id="item:"|add:item_a.name|add:"~"|add:item_b.name fav_name=item_a.name|add:" vs "|add:item_b.name %}
+{% endif %}

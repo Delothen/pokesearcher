@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Sprites · PokéSearcher{% endblock %}
+{% block content %}
+<h1>Search Pokémon Sprites</h1>
+<div class="search-wrapper">
+  <form class="search-form"
+        action="{% url 'pokedex:sprites' %}"
+        id="sprites-search-form"
+        hx-get="{% url 'pokedex:sprites' %}" hx-push-url="true"
+        hx-trigger="submit"
+        hx-target="#results"
+        hx-swap="innerHTML">
+    <input type="text" name="q"
+           id="sprites-search"
+           value="{{ q }}"
+           placeholder="Type a Pokémon name…"
+           autocomplete="off" required>
+    <button type="submit">Search</button>
+  </form>
+  <div id="suggestions" class="suggestions"></div>
+</div>
+{% include "pokedex/_last_search.html" %}
+<div id="results">
+  {% if sprites %}
+    {% include "pokedex/sprites_result.html" %}
+  {% endif %}
+</div>
+<script>
+(function() {
+  var allP = [];
+  var inp =
+    document.getElementById('sprites-search');
+  var sug = document.getElementById('suggestions');
+  var activeIdx = -1;
+
+  // Filter bar (Type, Generation...) above the search box; it narrows the
+  // suggestions below. Typing a name and pressing Search still searches it.
+  var F = pksFilters.attach({
+    kind: 'pokemon',
+    before: inp.closest('.search-wrapper'),
+    onChange: function() { render(inp.value.trim()); },
+    onLoad: function() {
+      if (document.activeElement === inp) render(inp.value.trim());
+    }
+  });
+  function showEmpty() {
+    if (F.active()) {
+      sug.style.display = 'block';
+      sug.appendChild(F.emptyNote());
+    } else {
+      sug.style.display = 'none';
+    }
+  }
+
+  fetch('/api/pokemon-list/')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      allP = d.sort(function(a, b) {
+        return a.name.localeCompare(b.name);
+      });
+    });
+
+  function score(name, q) {
+    return pksScore(name, q);
+  }
+
+  function render(q) {
+    sug.innerHTML = '';
+    activeIdx = -1;
+    var src = F.apply(allP);
+    var matches;
+    if (!q) {
+      matches = src;
+    } else {
+      matches = src
+        .map(function(p) {
+          return { p: p, s: score(p.name, q) };
+        })
+        .filter(function(x) { return x.s > 0; })
+        .sort(function(a, b) { return b.s - a.s; })
+        .map(function(x) { return x.p; });
+    }
+    if (matches.length === 0) {
+      showEmpty();
+      return;
+    }
+    sug.style.display = 'block';
+    matches.slice(0, 3).forEach(function(p) {
+      var div = document.createElement('div');
+      div.className = 'suggestion-item';
+      var img = document.createElement('img');
+      img.src = p.sprite;
+      img.onerror = function() { pksSuggestSprite(img, p); };
+      if (p.sprite_3d) img.classList.add('sprite-3d');
+      img.alt = '';
+      img.loading = 'lazy';
+      var span = document.createElement('span');
+      span.textContent = p.name;
+      div.appendChild(img);
+      div.appendChild(span);
+      div.addEventListener('click', function() {
+        inp.value = p.name;
+        sug.style.display = 'none';
+        document
+          .getElementById('sprites-search-form')
+          .requestSubmit();
+      });
+      sug.appendChild(div);
+    });
+    var rest = matches.slice(3);
+    if (rest.length > 0) {
+      var more = document.createElement('div');
+      more.className = 'suggestions-more';
+      rest.forEach(function(p) {
+        var div = document.createElement('div');
+        div.className = 'suggestion-item';
+        var img = document.createElement('img');
+        img.src = p.sprite;
+        img.onerror = function() { pksSuggestSprite(img, p); };
+        if (p.sprite_3d) img.classList.add('sprite-3d');
+        img.alt = '';
+        img.loading = 'lazy';
+        var span = document.createElement('span');
+        span.textContent = p.name;
+        div.appendChild(img);
+        div.appendChild(span);
+        div.addEventListener('click', function() {
+          inp.value = p.name;
+          sug.style.display = 'none';
+          document
+            .getElementById('sprites-search-form')
+            .requestSubmit();
+        });
+        more.appendChild(div);
+      });
+      sug.appendChild(more);
+    }
+  }
+
+  function highlight(idx) {
+    var items =
+      sug.querySelectorAll('.suggestion-item');
+    items.forEach(function(el, i) {
+      el.classList.toggle(
+        'suggestion-active', i === idx
+      );
+    });
+    if (items[idx])
+      items[idx].scrollIntoView({ block: 'nearest' });
+  }
+
+  inp.addEventListener('input', function() {
+    render(inp.value.trim());
+  });
+  inp.addEventListener('focus', function() {
+    if (!inp.value.trim() && allP.length > 0) {
+      render('');
+    }
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      sug.style.display = 'none';
+      return;
+    }
+    if (sug.style.display !== 'block') return;
+    var items =
+      sug.querySelectorAll('.suggestion-item');
+    if (items.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = (activeIdx + 1) % items.length;
+      highlight(activeIdx);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx =
+        (activeIdx - 1 + items.length) % items.length;
+      highlight(activeIdx);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIdx >= 0 && items[activeIdx]) {
+        inp.value =
+          items[activeIdx]
+            .querySelector('span').textContent;
+        sug.style.display = 'none';
+        document
+          .getElementById('sprites-search-form')
+          .requestSubmit();
+      }
+    } else if (e.key === 'Escape') {
+      sug.style.display = 'none';
+    }
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-wrapper, .filter-bar')) {
+      sug.style.display = 'none';
+    }
+  });
+})();
+</script>
+{% endblock %}

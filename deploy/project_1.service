@@ -1,0 +1,72 @@
+# [Unit] contains metadata about the unit as well as well as things the unit depends on in order to run
+# In this case our project doesn't depend on another service, but if the network is setting up we'd want to
+# wait until that's finished before turning on our web server.
+[Unit]
+# This describes the service
+Description=Project 1 (Django served by gunicorn)
+
+# This means that if the computer is booting and the network is currently setting up,
+# you should wait until that's done to run this service (makes sense!)
+After=network.target
+
+# [Service] contains detailed instructions on how linux should run the service
+[Service]
+# The user project_1 is created by our deploy script. It is a linux user account whose entire job is to run the
+# application. It's not possible to log in as this user account and it doesn't have sudo powers.
+User=project_1
+
+# This means the user cannot gain more privileges (cannot run sudo)
+NoNewPrivileges=yes
+
+# This prevents the user account (and thus the Django application) from writing any files. It can only read.
+ProtectSystem=strict
+
+# This overrules ProtectSystem=strict for just one folder and gives the app the ability to write to /var/lib/project_1,
+# which contains the SQLite database, collected static files and uploaded files.
+# (The app needs to be able to write here to work)
+StateDirectory=project_1
+StateDirectoryMode=0750
+
+# This prevents the user account from being able to read from the linux home folder.
+ProtectHome=yes
+
+# This gives the user account it's own private folder for temporary files and blocks it from accessing shared temporary
+# file folders
+PrivateTmp=yes
+
+# This sets the working directory of the service. That means the command "python manage.py" runs in this folder.
+WorkingDirectory=/opt/project_1/app
+
+# These configure environment variables
+Environment=DATABASE_URL=sqlite:////var/lib/project_1/db.sqlite3
+Environment=STATIC_ROOT=/var/lib/project_1/static
+Environment=MEDIA_ROOT=/var/lib/project_1/media
+
+# The address of your site, from https://portal.carleton.university.
+# Replace CHANGE-ME on both lines with your hostname. For example:
+#   Environment=ALLOWED_HOSTS=itec-4012-integral-basilisk.projects.carleton.university
+#   Environment=CSRF_TRUSTED_ORIGINS=https://itec-4012-integral-basilisk.projects.carleton.university
+Environment=ALLOWED_HOSTS=itec4012-amazing-moccasin.projects.carleton.university
+Environment=CSRF_TRUSTED_ORIGINS=https://itec4012-amazing-moccasin.projects.carleton.university
+# The secret key is kept out of this file (and out of GitHub). deploy.sh generates the secret key on the production server
+# and saves it in /etc/project_1/env. This line loads that file and sets the SECRET_KEY environment variable.
+EnvironmentFile=/etc/project_1/env
+
+# Before running the server, this runs django migrations (always a good idea!)
+ExecStartPre=/opt/project_1/venv/bin/python manage.py migrate --noinput
+
+# Before running the server, this runs collectstatic (needed for a production deployment)
+ExecStartPre=/opt/project_1/venv/bin/python manage.py collectstatic --noinput
+
+# This is the command used to run the server. Note that it isn't 'python manage.py runserver', because this is a production server
+ExecStart=/opt/project_1/venv/bin/gunicorn project_1.wsgi --bind 0.0.0.0:3000 --workers 2 --timeout 120 --access-logfile - --no-control-socket
+
+# This sets the condition for restarting the service. In this case the service will restart whenever it crashes, which
+# is a good idea
+Restart=on-failure
+
+# The install script (deploy.sh) installs the service by running the command 'systemctl enable project_1'.
+# The [Install] section describes what happens when the service is enabled with this command.
+# In this case 'multi-user.target' means that the service will automatically run every time the system is finished booting.
+[Install]
+WantedBy=multi-user.target

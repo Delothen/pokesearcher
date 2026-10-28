@@ -1,0 +1,6 @@
+{% for m, ls in last_searches.items %}
+<p class="last-search" id="last-{{ m }}"{% if oob %} hx-swap-oob="true"{% endif %}
+   {% if m != mode or not ls or pa or ma or abil_a or item_a %}hidden{% endif %}>
+  {% if ls %}Last search: <a href="{{ ls.url }}">{{ ls.name }}</a>{% endif %}
+</p>
+{% endfor %}

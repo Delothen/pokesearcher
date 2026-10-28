@@ -1,0 +1,85 @@
+{% comment %} The Z-Moves a Z-Crystal creates, laid out like the Pokémon table
+   (_mon_table.html): a heading with a count, a search box with the move
+   Filters and Search buttons, and a table.
+   Needs: z_moves (from, pokemon, moves: [{name, label}]). {% endcomment %}
+<section class="cmp-section moves-section" id="item-zmoves-box">
+  <h3 id="zmove-heading" data-title="Z-Move it creates">Z-Move it creates ({{ z_moves.moves|length }})</h3>
+  <div class="search-wrapper mon-search-wrapper" id="zmove-search-wrapper">
+    <form class="search-form" onsubmit="filterZMoves(); return false;">
+      <input type="text"
+             id="zmove-search"
+             placeholder="Search moves…"
+             autocomplete="off"
+             oninput="filterZMoves()">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+  <div class="moves-list">
+    <table class="mon-table zmove-table moves-table"
+           data-meta-url="{% url 'pokedex:move_meta' %}">
+      <thead>
+        <tr>
+          <th class="zm-col-name">Move</th>
+          <th class="zm-col-from">Upgrades</th>
+          <th class="zm-col-by">Used by</th>
+          <th class="mon-col-type">Type</th>
+          <th class="zm-col-small">Cat.</th>
+          <th class="zm-col-small">Power</th>
+          <th class="zm-col-small">Acc.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for zm in z_moves.moves %}
+        <tr class="move-row zmove-item" data-name="{{ zm.name }}" data-label="{{ zm.label|lower }}">
+          <td>
+            <a class="move-link"
+               href="{% url 'pokedex:moves' %}?q={{ zm.name|urlencode }}">{{ zm.label }}</a>
+          </td>
+          <td>{{ z_moves.from }}</td>
+          <td>{{ z_moves.pokemon }}</td>
+          <td class="mm-type"></td><td class="mm-cat"></td><td class="mm-power"></td><td class="mm-acc"></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="empty" id="no-zmoves" hidden>No Z-Moves match that filter.</p>
+  </div>
+</section>
+<script>
+  // Same Filters button (Type, Category, Generation) as the Moves search
+  // bar; it narrows the rows together with the text box.
+  window.zmoveFilters = null;
+  (function() {
+    var wrap = document.getElementById('zmove-search-wrapper');
+    if (wrap && window.pksFilters) {
+      window.zmoveFilters = pksFilters.attach({
+        kind: 'move',
+        before: wrap,
+        onChange: function() { filterZMoves(); },
+        onLoad: function() { filterZMoves(); }
+      });
+    }
+  })();
+  function filterZMoves() {
+    var q = (document.getElementById('zmove-search').value || '')
+      .toLowerCase().trim();
+    var dashed = q.replace(/\s+/g, '-');
+    var F = window.zmoveFilters;
+    var shown = 0;
+    document.querySelectorAll('.zmove-item').forEach(function(row) {
+      var show = (q === '' || row.dataset.label.indexOf(q) !== -1 ||
+                  row.dataset.name.indexOf(dashed) !== -1) &&
+        (!F || !F.active() || F.matches(row.dataset.name));
+      row.style.display = show ? '' : 'none';
+      if (show) shown++;
+    });
+    var heading = document.getElementById('zmove-heading');
+    if (heading) heading.textContent = heading.dataset.title + ' (' + shown + ')';
+    var note = document.getElementById('no-zmoves');
+    if (note) note.hidden = shown > 0;
+    if (window.pksMoveMeta) {
+      pksMoveMeta.fill(document.querySelector('.zmove-table'));
+    }
+  }
+  filterZMoves();
+</script>

@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+{% block title %}Abilities · PokéSearcher{% endblock %}
+{% block content %}
+<h1>Search an Ability</h1>
+<div class="search-wrapper">
+  <form class="search-form"
+        action="{% url 'pokedex:abilities' %}"
+        id="abilities-search-form"
+        hx-get="{% url 'pokedex:abilities' %}" hx-push-url="true"
+        hx-trigger="submit"
+        hx-target="#results"
+        hx-swap="innerHTML">
+    <input type="text" name="q"
+           id="abilities-search"
+           value="{{ q }}"
+           placeholder="Type an ability name…"
+           autocomplete="off" required>
+    <button type="submit">Search</button>
+  </form>
+  <div id="suggestions" class="suggestions"></div>
+</div>
+{% include "pokedex/_last_search.html" %}
+<div id="results">
+  {% if ability or not_found %}
+    {% include "pokedex/abilities_result.html" %}
+  {% endif %}
+</div>
+<script>
+(function() {
+  var allA = [];
+  var inp =
+    document.getElementById('abilities-search');
+  var sug = document.getElementById('suggestions');
+  var activeIdx = -1;
+
+  // Filter bar (Type, Generation...) above the search box; it narrows the
+  // suggestions below. Typing a name and pressing Search still searches it.
+  var F = pksFilters.attach({
+    kind: 'ability',
+    before: inp.closest('.search-wrapper'),
+    onChange: function() { render(inp.value.trim()); },
+    onLoad: function() {
+      if (document.activeElement === inp) render(inp.value.trim());
+    }
+  });
+  function showEmpty() {
+    if (F.active()) {
+      sug.style.display = 'block';
+      sug.appendChild(F.emptyNote());
+    } else {
+      sug.style.display = 'none';
+    }
+  }
+
+  // Every ability PokeAPI knows, loaded from our cached list.
+  fetch('/api/ability-list/')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { allA = d; });
+
+  function score(name, q) {
+    return pksScore(name, q);
+  }
+
+  function render(q) {
+    sug.innerHTML = '';
+    activeIdx = -1;
+    var src = F.apply(allA);
+    var matches;
+    if (!q) {
+      matches = src;
+    } else {
+      matches = src
+        .map(function(m) {
+          return { n: m, s: score(m, q) };
+        })
+        .filter(function(x) { return x.s > 0; })
+        .sort(function(a, b) { return b.s - a.s; })
+        .map(function(x) { return x.n; });
+    }
+    if (matches.length === 0) {
+      showEmpty();
+      return;
+    }
+    sug.style.display = 'block';
+    matches.slice(0, 3).forEach(function(m) {
+      sug.appendChild(makeText(m));
+    });
+    var rest = matches.slice(3);
+    if (rest.length > 0) {
+      var more = document.createElement('div');
+      more.className = 'suggestions-more';
+      rest.forEach(function(m) {
+        more.appendChild(makeText(m));
+      });
+      sug.appendChild(more);
+    }
+  }
+
+  function makeText(m) {
+    var div = document.createElement('div');
+    div.className = 'suggestion-item';
+    div.textContent = m;
+    div.addEventListener('click', function() {
+      inp.value = m;
+      sug.style.display = 'none';
+      document
+        .getElementById('abilities-search-form')
+        .requestSubmit();
+    });
+    return div;
+  }
+
+  function highlight(idx) {
+    var items =
+      sug.querySelectorAll('.suggestion-item');
+    items.forEach(function(el, i) {
+      el.classList.toggle(
+        'suggestion-active', i === idx
+      );
+    });
+    if (items[idx])
+      items[idx].scrollIntoView({ block: 'nearest' });
+  }
+
+  inp.addEventListener('input', function() {
+    render(inp.value.trim());
+  });
+  inp.addEventListener('focus', function() {
+    if (!inp.value.trim() && allA.length > 0) {
+      render('');
+    }
+  });
+  inp.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      sug.style.display = 'none';
+      return;
+    }
+    if (sug.style.display !== 'block') return;
+    var items =
+      sug.querySelectorAll('.suggestion-item');
+    if (items.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIdx = (activeIdx + 1) % items.length;
+      highlight(activeIdx);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIdx =
+        (activeIdx - 1 + items.length) % items.length;
+      highlight(activeIdx);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIdx >= 0 && items[activeIdx]) {
+        inp.value = items[activeIdx].textContent;
+        sug.style.display = 'none';
+        document
+          .getElementById('abilities-search-form')
+          .requestSubmit();
+      }
+    } else if (e.key === 'Escape') {
+      sug.style.display = 'none';
+    }
+  });
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest('.search-wrapper, .filter-bar')) {
+      sug.style.display = 'none';
+    }
+  });
+})();
+</script>
+{% endblock %}

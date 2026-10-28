@@ -1,0 +1,139 @@
+{% if not_found %}
+<p class="empty">
+  No game info found for "{{ q }}".
+</p>
+{% elif info %}
+<div class="game-info">
+  <p class="gi-heading">
+    <b>{{ info.name }}</b> in <b>{{ info.label }}</b>
+    <span class="gi-gen">Generation {{ info.generation }}</span>
+  </p>
+  {% if info.not_yet %}
+  <p class="gi-note">
+    {{ info.name }} was introduced after this game came out, so it is not
+    in {{ info.label }}.
+  </p>
+  {% endif %}
+
+  {% if info.evolution.special_edges and info.game != "champions" %}
+  {% comment %}
+    The Evolution line beside the sprite covers every ordinary method; only the
+    ones it cannot explain are listed here.
+  {% endcomment %}
+  <section class="cmp-section gi-section" id="gi-evolution">
+    <h3>Evolution methods</h3>
+    <ul class="gi-list gi-evo">
+      {% for e in info.evolution.special_edges %}
+      <li class="{% if e.current %}gi-current{% endif %}{% if not e.available %} gi-unavailable{% endif %}">
+        <span class="gi-evo-names">{{ e.src }} → {{ e.dst }}</span>
+        <span class="gi-evo-method">
+          {{ e.method }}{% if not e.available %}
+          <em>(not in {{ info.label }})</em>{% endif %}
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+  </section>
+  {% endif %}
+
+  <section class="cmp-section gi-section">
+    <h3>Where to find it</h3>
+    {% if info.game == "champions" %}
+    <p class="empty">
+      There are no wild encounters in {{ info.label }}. {{ info.name }} can be
+      found in Roster Ranch or brought in from Pokémon HOME.
+    </p>
+    {% elif info.encounters.rows %}
+    <div class="gi-table-wrap">
+      <table class="gi-table">
+        <thead>
+          <tr>
+            <th>Location</th>
+            <th>Method</th>
+            <th>Level</th>
+            <th>Chance</th>
+            <th>Versions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in info.encounters.rows %}
+          <tr>
+            <td>{{ r.location }}</td>
+            <td>{{ r.method }}</td>
+            <td>{{ r.levels|default:"—" }}</td>
+            <td>{% if r.chance %}{{ r.chance }}%{% else %}—{% endif %}</td>
+            <td>{{ r.versions|default:"All" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if info.encounters.more %}
+    <p class="gi-note">…and {{ info.encounters.more }} more locations.</p>
+    {% endif %}
+    {% elif info.encounters.notes %}
+    <ul class="gi-list">
+      {% for n in info.encounters.notes %}
+      <li>
+        <span class="gi-evo-names">{{ n.region }}</span>
+        <span>{{ n.text }}{% if n.version %} ({{ n.version }} only){% endif %}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% elif info.game == "legends-za" %}
+    <p class="empty">
+      Found in the Hyperspace Dimension.
+    </p>
+    {% elif info.encounters.supported %}
+    <p class="empty">
+      {% if info.encounters.from_notes %}No location is listed for {{ info.name }} in {{ info.label }}.{% else %}Not found in the wild in {{ info.label }}.{% endif %}
+      It may be a gift, trade, evolution or event Pokémon{% if info.evolves_from %}
+      (it evolves from {{ info.evolves_from }}){% endif %}.
+    </p>
+    {% else %}
+    <p class="empty">
+      Wild location data is not available for {{ info.label }}.
+      {% if info.evolves_from %}It evolves from {{ info.evolves_from }}.{% endif %}
+    </p>
+    {% endif %}
+  </section>
+
+  {% if info.dex or info.entries %}
+  <section class="cmp-section gi-section">
+    <h3>Pokédex</h3>
+    {% if info.dex %}
+    <p class="gi-dex">
+      {% for d in info.dex %}<span>{{ d.name }} <b>#{{ d.number }}</b></span>{% endfor %}
+    </p>
+    {% endif %}
+    {% for e in info.entries %}
+    <blockquote class="gi-entry">
+      {{ e.text }}
+      <cite>{{ e.version }}</cite>
+    </blockquote>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  {% if info.facts or info.breeding %}
+  <section class="cmp-section" id="gi-pokedex-data">
+    <h3>Pokédex data</h3>
+    {% if info.facts %}
+    <ul class="stats pd-facts">
+      {% for label, value in info.facts %}
+      <li><span>{{ label }}</span><b>{{ value }}</b></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% if info.breeding %}
+    <h4 class="pd-sub">Breeding</h4>
+    <ul class="stats pd-facts">
+      {% for label, value in info.breeding %}
+      <li><span>{{ label }}</span><b>{{ value }}</b></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </section>
+  {% endif %}
+</div>
+{% endif %}

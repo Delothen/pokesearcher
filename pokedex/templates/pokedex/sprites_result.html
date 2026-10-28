@@ -1,0 +1,299 @@
+{% if not_found %}
+  <p class="empty">
+    No sprites found for "{{ q }}".
+  </p>
+{% elif sprites %}
+  <article class="pokemon-card">
+    <div class="pokemon-top sprites-top">
+      <h2 id="sprites-title">
+        Sprites for
+        {{ pokemon_name|capfirst }}
+      </h2>
+      <div class="fav-right">
+        <label class="shiny-toggle">
+          <input type="checkbox"
+                 id="shiny-toggle"
+                 onchange="setSpritesShiny(this.checked)">
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">✨ Shiny</span>
+        </label>
+      </div>
+    </div>
+    <div class="sprites-body{% if forms %} has-forms{% endif %}">
+    {% if forms %}
+    <div class="form-toggle sprites-form-toggle" id="form-toggle"
+         role="group" aria-label="Forms">
+      <span class="form-toggle-label">Forms</span>
+      {% for f in forms %}
+      <button type="button"
+              class="game-btn form-btn{% if f.current %} active{% endif %}"
+              data-idx="{{ forloop.counter0 }}"
+              onclick="setSpriteForm({{ forloop.counter0 }})">
+        {{ f.label }}
+      </button>
+      {% endfor %}
+    </div>
+    {{ forms|json_script:"sprite-forms-data" }}
+    {% endif %}
+    <div class="sprite-grid">
+      {% for s in sprites %}
+        <div class="sprite-item"
+             data-game="{{ s.game }}"
+             data-normal="{{ s.url }}"
+             data-shiny="{{ s.shiny }}"
+             onclick="openLightbox(this)">
+          <img src="{{ s.url }}" alt="{{ s.game }}"
+               {% if s.url|slice:"-5:" == ".webp" %}class="smooth"{% endif %}>
+          <span class="sprite-label">
+            {{ s.game|capfirst }}
+          </span>
+        </div>
+      {% endfor %}
+    </div>
+    </div>{# /sprites-body #}
+  </article>
+
+  <div id="lightbox"
+       class="lightbox"
+       style="display:none;">
+    <div class="lightbox-content">
+      <button type="button"
+              class="lightbox-close"
+              aria-label="Close"
+              onclick="closeLightbox()">
+        ✕
+      </button>
+      <img id="lightbox-img"
+           src="" alt="">
+      <div id="lightbox-no-shiny"
+           class="lightbox-no-shiny" hidden>
+        No shiny sprite for this game
+      </div>
+      <div class="lightbox-footer">
+        <span id="lightbox-label"
+              class="lightbox-label"></span>
+        <label class="shiny-toggle lightbox-shiny">
+          <input type="checkbox"
+                 id="lightbox-shiny-toggle"
+                 onchange="setLightboxShiny(this.checked)">
+            <span class="toggle-text">✨ Shiny</span>
+            <span class="toggle-slider"></span>
+        </label>
+        <label class="fav-toggle">
+          <input type="checkbox"
+                 id="lightbox-fav-cb"
+                 class="fav-checkbox"
+                 data-type="sprite"
+                 onchange="toggleFav(this)">
+            <span class="toggle-text"
+                id="lightbox-fav-text">
+            Favourite
+          </span>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // The popup is moved to <body> while open (see openLightbox); drop the
+    // copy left over from the previous search.
+    document.querySelectorAll('body > #lightbox').forEach(function(n) {
+      n.remove();
+    });
+    var spritePname = '{{ pokemon_name|escapejs }}';
+    var spritePid = '{{ pokemon_id|escapejs }}';
+    var spritesShiny = false;
+    try {
+      spritesShiny = localStorage.getItem('pks-shiny') === '1';
+    } catch (e) {}
+
+    function cap(t) {
+      return t.charAt(0).toUpperCase() + t.slice(1);
+    }
+    // Shiny sprite when there is one, otherwise the normal one.
+    function shownIsShiny(item) {
+      return spritesShiny && !!item.dataset.shiny;
+    }
+    function applySpritesShiny() {
+      document.querySelectorAll('.sprite-item')
+        .forEach(function(item) {
+          var shiny = shownIsShiny(item);
+          item.querySelector('img').src =
+            shiny ? item.dataset.shiny : item.dataset.normal;
+          item.classList.toggle(
+            'no-shiny', spritesShiny && !item.dataset.shiny
+          );
+          item.querySelector('.sprite-label').textContent =
+            cap(item.dataset.game) +
+            (spritesShiny && !item.dataset.shiny
+              ? ' · no shiny' : '');
+        });
+    }
+    function setSpritesShiny(on) {
+      spritesShiny = on;
+      try {
+        localStorage.setItem('pks-shiny', on ? '1' : '0');
+      } catch (e) {}
+      applySpritesShiny();
+    }
+    document.getElementById('shiny-toggle').checked = spritesShiny;
+    applySpritesShiny();
+
+    // ---- other forms (Minior's colours, Mimikyu's Busted form...) ----
+    var spriteForms = [];
+    try {
+      var sfEl = document.getElementById('sprite-forms-data');
+      if (sfEl) spriteForms = JSON.parse(sfEl.textContent);
+    } catch (e) {}
+    function setSpriteForm(idx) {
+      var f = spriteForms[idx];
+      if (!f) return;
+      closeLightbox();
+      // a refresh stays on this form (the first form is the default)
+      if (window.pksPageMemory) pksPageMemory.set('form', f.current ? '' : f.name);
+      // favourites from here on are for this form
+      spritePname = f.name;
+      spritePid = f.name;
+      var title = document.getElementById('sprites-title');
+      if (title) title.textContent = 'Sprites for ' + cap(f.name);
+      var grid = document.querySelector('.sprite-grid');
+      grid.innerHTML = '';
+      f.sprites.forEach(function(s) {
+        var item = document.createElement('div');
+        item.className = 'sprite-item';
+        item.dataset.game = s.game;
+        item.dataset.normal = s.url;
+        item.dataset.shiny = s.shiny || '';
+        item.addEventListener('click', function() { openLightbox(item); });
+        var img = document.createElement('img');
+        img.src = s.url;
+        img.alt = s.game;
+        if (/\.webp(\?|$)/.test(s.url)) img.className = 'smooth';
+        var label = document.createElement('span');
+        label.className = 'sprite-label';
+        label.textContent = cap(s.game);
+        item.appendChild(img);
+        item.appendChild(label);
+        grid.appendChild(item);
+      });
+      document.querySelectorAll('#form-toggle .form-btn')
+        .forEach(function(b) {
+          b.classList.toggle('active', Number(b.dataset.idx) === idx);
+        });
+      applySpritesShiny();
+    }
+
+    var lbItem = null;
+    var lbShiny = false;
+    function renderLightbox() {
+      if (!lbItem) return;
+      var game = lbItem.dataset.game;
+      var hasShiny = !!lbItem.dataset.shiny;
+      var missing = lbShiny && !hasShiny;
+      var shiny = lbShiny && hasShiny;
+      var url = shiny ? lbItem.dataset.shiny : lbItem.dataset.normal;
+      var img = document.getElementById('lightbox-img');
+      img.src = url;
+      img.classList.toggle('smooth', /\.webp(\?|$)/.test(url));
+      // No shiny for this game: text stands in for the sprite.
+      img.hidden = missing;
+      document.getElementById('lightbox-no-shiny').hidden = !missing;
+      document.getElementById('lightbox-label').textContent =
+        cap(spritePname) + ' — ' + cap(game) +
+        (shiny ? ' (shiny)' : '');
+      var cb = document.getElementById('lightbox-fav-cb');
+      cb.dataset.id =
+        spritePid + '-' + game + (shiny ? '-shiny' : '');
+      cb.dataset.name = spritePname;
+      cb.dataset.sprite = url;
+      // Nothing to favourite while the shiny sprite is missing.
+      cb.disabled = missing;
+      cb.parentNode.style.opacity = missing ? '0.4' : '';
+      if (window.syncFavChecks) syncFavChecks();
+    }
+    function setLightboxShiny(on) {
+      lbShiny = on;
+      renderLightbox();
+    }
+    function openLightbox(item) {
+      lbItem = item;
+      // <main> has a backdrop-filter, which makes a fixed child position
+      // against the page instead of the screen. Under <body> the popup is
+      // centred on what you can see.
+      var lbEl = document.getElementById('lightbox');
+      if (lbEl.parentNode !== document.body) document.body.appendChild(lbEl);
+      // The popup opens on the normal sprite, unless the page's Shiny
+      // toggle is on; its own toggle flips it for just this sprite.
+      lbShiny = spritesShiny;
+      document.getElementById('lightbox-shiny-toggle').checked = lbShiny;
+      renderLightbox();
+      placeLightbox();
+      document.getElementById('lightbox').style.display = 'flex';
+    }
+    function closeLightbox() {
+      document.getElementById('lightbox').style.display = 'none';
+    }
+    // Keep the popup in the visible area: below the nav bar (and the
+    // coloured band under it) and above the fixed footer.
+    function placeLightbox() {
+      var lb = document.getElementById('lightbox');
+      if (!lb) return;
+      var top = 0, bottom = 0;
+      var bar = document.querySelector('.topbar');
+      if (bar) {
+        top = bar.getBoundingClientRect().bottom;
+        // Luxury Ball: the yellow / red strips are drawn on the page back
+        // right under the bar, so the popup starts below them.
+        if (!document.body.classList.contains('light-mode')) {
+          var cs = getComputedStyle(document.body);
+          var strips = (parseFloat(cs.getPropertyValue('--topbar-h')) || 0) +
+                       (parseFloat(cs.getPropertyValue('--strips-h')) || 0);
+          top = Math.max(top, strips);
+        }
+      }
+      var foot = document.querySelector('.site-footer');
+      if (foot) {
+        bottom = Math.max(0, window.innerHeight - foot.getBoundingClientRect().top);
+      }
+      lb.style.setProperty('--lb-top', Math.max(0, top) + 'px');
+      lb.style.setProperty('--lb-bottom', bottom + 'px');
+    }
+    function lightboxOpen() {
+      var lb = document.getElementById('lightbox');
+      return !!lb && lb.style.display !== 'none';
+    }
+    // These live on document/window, so swap out the previous page's copies.
+    if (window.__lbClick) document.removeEventListener('click', window.__lbClick);
+    if (window.__lbKey) document.removeEventListener('keydown', window.__lbKey);
+    if (window.__lbResize) window.removeEventListener('resize', window.__lbResize);
+    // A click anywhere outside the popup closes it (a sprite click opens it).
+    window.__lbClick = function(e) {
+      if (!lightboxOpen()) return;
+      if (e.target.closest('.lightbox-content') ||
+          e.target.closest('.sprite-item')) return;
+      closeLightbox();
+    };
+    window.__lbKey = function(e) {
+      if (e.key === 'Escape') closeLightbox();
+    };
+    window.__lbResize = function() {
+      if (lightboxOpen()) placeLightbox();
+    };
+    document.addEventListener('click', window.__lbClick);
+    document.addEventListener('keydown', window.__lbKey);
+    window.addEventListener('resize', window.__lbResize);
+
+    // Reopen on the form the page was on before a refresh.
+    (function() {
+      var saved = window.pksPageMemory ? pksPageMemory.get('form') : '';
+      if (!saved) return;
+      for (var i = 0; i < spriteForms.length; i++) {
+        if (spriteForms[i].name === saved && !spriteForms[i].current) {
+          setSpriteForm(i);
+          return;
+        }
+      }
+    })();
+  </script>
+{% endif %}

@@ -1,0 +1,786 @@
+{
+ "legends-za": {
+  "abomasnow": [
+   {
+    "text": "It blankets wide areas in snow by whipping up blizzards. It is also known as the Ice Monster.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "abra": [
+   {
+    "text": "It sleeps for 18 hours a day. It uses a variety of extrasensory powers even while asleep.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "absol": [
+   {
+    "text": "It senses coming disasters and appears before people only to warn them of impending danger.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "aegislash": [
+   {
+    "text": "Apparently, it can detect the innate qualities of leadership. According to legend, whoever it recognizes is destined to rule.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "annihilape": [
+   {
+    "text": "Primeape evolved into Annihilape after repeatedly using a move with enough force to burst the blood vessels in its head.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "avalugg": [
+   {
+    "text": "Its ice-covered body is as hard as steel. Its enormous frame crushes anything that stands in its way.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "barbaracle": [
+   {
+    "text": "Barbaracle's legs and hands have minds of their own, and they will move independently. But they usually follow the head's orders.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "blastoise": [
+   {
+    "text": "It crushes its foe under its heavy body to cause fainting. In a pinch, it will withdraw inside its shell.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "charizard": [
+   {
+    "text": "Its wings can carry this Pokémon close to an altitude of 4,600 feet. It blows out fire at very high temperatures.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "clauncher": [
+   {
+    "text": "They knock down flying prey by firing compressed water from their massive claws like shooting a pistol.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "clawitzer": [
+   {
+    "text": "By expelling water from the nozzle in the back of its claw, it can move at a speed of 60 knots.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "crobat": [
+   {
+    "text": "If it bites you in the dark and sucks your blood, you won't notice immediately-its fangs are so sharp that you won't feel any pain.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "dragalge": [
+   {
+    "text": "Their poison is strong enough to eat through the hull of a tanker, and they spit it indiscriminately at anything that enters their territory.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "eevee": [
+   {
+    "text": "Thanks to its unstable genetic makeup, this special Pokémon conceals many different possible evolutions.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "ekans": [
+   {
+    "text": "As it matures, it grows longer. At night, it wraps its long body around tree branches to rest.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "floette": [
+   {
+    "text": "This Pokémon uses red wavelengths of light to pour its own energy into flowers and draw forth their latent potential.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "florges": [
+   {
+    "text": "They say that flower gardens created by Florges constantly emit a power that can heal both body and spirit.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "frogadier": [
+   {
+    "text": "Its swiftness is unparalleled. It can scale a tower of more than 2,000 feet in a minute's time.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "furfrou": [
+   {
+    "text": "Historically, in the Kalos region, these Pokémon were the designated guardians of the king.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "gastly": [
+   {
+    "text": "It's born from gases. Anyone would faint if engulfed by its gaseous body, which contains poison.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "gengar": [
+   {
+    "text": "It hides in shadows. It is said that in rooms where Gengar is hiding, the temperature drops by nearly 10 degrees Fahrenheit.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "gimmighoul": [
+   {
+    "text": "It lurks inside a sturdy treasure chest and possesses solid defenses, but it's so heavy that it has difficulty moving around.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "golbat": [
+   {
+    "text": "Golbat punctures even the hardest of hides with its sharp fangs, then gorges itself on its victims' blood.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "greninja": [
+   {
+    "text": "It creates throwing stars out of compressed water. When it spins them and throws them at high speed, these stars can split metal in two.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "jolteon": [
+   {
+    "text": "It absorbs negative ions from the atmosphere to spit out 10,000 volts of electricity.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "mankey": [
+   {
+    "text": "Mankey are perpetually angry. If they spot suitable prey, they will attack as a group.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "mewtwo": [
+   {
+    "text": "It was created by a scientist after years of horrific gene-splicing and DNA-engineering experiments.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "overqwil": [
+   {
+    "text": "Overqwil's poisonous spikes-now thicker, longer, and stronger-will automatically strike toward anything that moves.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "pichu": [
+   {
+    "text": "It is not yet skilled at storing electricity. It may send out a jolt if amused or startled.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "pidgey": [
+   {
+    "text": "It is docile and prefers to avoid conflict. If disturbed, however, it can ferociously strike back.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "pikachu": [
+   {
+    "text": "It has small electric sacs on both its cheeks. When in a tough spot, this Pokémon discharges electricity.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "porygon": [
+   {
+    "text": "This is an artificial Pokémon created as a result of research. Its programming contains only the most basic of actions.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "qwilfish": [
+   {
+    "text": "To fire off the poison spikes covering its body, it inflates itself by sucking in over 2.6 gallons of water all at once.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "raichu": [
+   {
+    "text": "When its electricity builds, its muscles are stimulated, and it becomes more aggressive than usual.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "rayquaza": [
+   {
+    "text": "Rayquaza cannot be seen from the ground because it lives in the ozone layer, far above the clouds.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "snover": [
+   {
+    "text": "In the spring, it grows berries with the texture of frozen treats around its belly.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "squawkabilly": [
+   {
+    "text": "Squawkabilly form flocks based on the color of their plumage. Green ones are abundant because their coloration is more likely to be passed down.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "squirtle": [
+   {
+    "text": "It hides in its shell to protect itself, then strikes back with spouts of water at every opportunity.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "sylveon": [
+   {
+    "text": "It wraps its ribbonlike feelers around the arm of its beloved Trainer and walks with them.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "vaporeon": [
+   {
+    "text": "It has evolved to be suited for an aquatic life. It can become invisible when it melts away into water.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "vivillon": [
+   {
+    "text": "The patterns on this Pokémon depend on the climate and topography of the land it was born in. This form is from frigid lands.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "wartortle": [
+   {
+    "text": "When tapped on its head, this Pokémon will pull it in, but its tail will still stick out a little bit.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "xerneas": [
+   {
+    "text": "When the horns on its head shine in seven colors, it is said to be sharing everlasting life.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "zubat": [
+   {
+    "text": "It sleeps in caves during the day. It has no eyes, so it emits ultrasonic waves to check its surroundings while flying.",
+    "version": "Legends: Z-A"
+   }
+  ],
+  "zygarde": [
+   {
+    "text": "This is Zygarde when about 10% of its pieces have been assembled. It leaps at its opponent's chest and sinks its sharp fangs into them.",
+    "version": "Legends: Z-A"
+   }
+  ]
+ },
+ "scarlet-violet": {
+  "abomasnow": [
+   {
+    "text": "It lives a quiet life on mountains that are perpetually covered in snow. It hides itself by whipping up blizzards.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "They appear when the snow flowers bloom. When the petals fall, they retreat to places unknown again.",
+    "version": "Violet"
+   }
+  ],
+  "appletun": [
+   {
+    "text": "It feeds mainly on sweet apples. It will also eat small bug Pokémon that are attracted by its sweet nectar.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "When some Lechonk come along to lick the sweet nectar on Appletun's back, Appletun will spew sticky nectar at them to drive them away.",
+    "version": "Violet"
+   }
+  ],
+  "arcanine": [
+   {
+    "text": "An ancient picture scroll shows that people were captivated by its movement as it ran through prairies.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Its magnificent bark conveys a sense of majesty. Anyone hearing it can't help but grovel before it.",
+    "version": "Violet"
+   }
+  ],
+  "avalugg": [
+   {
+    "text": "As Avalugg walks along with Bergmite on its back, it comes across pods of Cetitan . It lets them pass to avoid conflict.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "This Pokémon uses its massive icy body to flatten anything that gets in its way. When it's floating out on the ocean, it looks exactly like drift ice.",
+    "version": "Violet"
+   }
+  ],
+  "basculegion": [
+   {
+    "text": "This Pokémon is cloaked in the souls of its comrades who perished during a punishing journey to the river of their birth.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It can jump with incredible power. Parts of its body are tinged red by the rage of its fallen friends.",
+    "version": "Violet"
+   }
+  ],
+  "basculin": [
+   {
+    "text": "Its temperament is vicious and aggressive. This Pokémon is also full of vitality and can multiply rapidly before anyone notices.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It's so vicious that it's called the Thug of the River. Yet Basculin is still targeted by predators, such as Dondozo and Bombirdier .",
+    "version": "Violet"
+   }
+  ],
+  "blastoise": [
+   {
+    "text": "It deliberately increases its body weight so it can withstand the recoil of the water jets it fires.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It has jet nozzles on its shell. This impressive Pokémon uses these jets to charge toward foes with all the force of a rocket.",
+    "version": "Violet"
+   }
+  ],
+  "charizard": [
+   {
+    "text": "If Charizard becomes truly angered, the flame at the tip of its tail burns in a light blue shade.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It uses its wings to fly sky-high. The more experience it gains in battle, the greater the temperature at which its flames burn.",
+    "version": "Violet"
+   }
+  ],
+  "clauncher": [
+   {
+    "text": "This Pokémon launches water by detonating gas inside its right claw. It snipes flying Pokémon.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Clauncher's claws will regrow if they fall off. The meat inside the claws is edible, but it has a distinct flavor that doesn't appeal to all tastes.",
+    "version": "Violet"
+   }
+  ],
+  "clawitzer": [
+   {
+    "text": "Clawitzer can move through the water at a speed of 60 knots by using gas inside its body to expel water from the back of its claw.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "The cannonballs of seawater that Clawitzer launches from its claw are powerful enough to punch through tanker hulls.",
+    "version": "Violet"
+   }
+  ],
+  "dragalge": [
+   {
+    "text": "Using a liquid poison, Dragalge indiscriminately attacks anything that wanders into its territory. This poison can corrode the undersides of boats.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Since Finizen is the better swimmer, Dragalge will approach it under the cover of seaweed, then immobilize it with a poisonous attack.",
+    "version": "Violet"
+   }
+  ],
+  "duraludon": [
+   {
+    "text": "Duraludon’s body is comprised of a special metal that’s lightweight and scratch resistant. It’s also smooth, as though it was given a mirror finish.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Its metal body is durable but prone to retaining heat. It vents this heat from the slits in its tail.",
+    "version": "Violet"
+   }
+  ],
+  "eevee": [
+   {
+    "text": "Its ability to evolve into many forms allows it to adapt smoothly and perfectly to any environment.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Its genetic code is irregular. It may mutate if it is exposed to radiation from element stones.",
+    "version": "Violet"
+   }
+  ],
+  "ekans": [
+   {
+    "text": "It can freely detach its jaw to swallow large prey whole. It can become too heavy to move, however.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "A very common sight in grasslands and such. It flicks its tongue in and out to sense danger in its surroundings.",
+    "version": "Violet"
+   }
+  ],
+  "empoleon": [
+   {
+    "text": "If anyone were to hurt its pride, it would slash them in two with wings that can cleave through an ice floe.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It avoids unnecessary disputes, but it will mercilessly decimate anything that threatens the safety of its colony.",
+    "version": "Violet"
+   }
+  ],
+  "flapple": [
+   {
+    "text": "It flutters around while seeking an opening in the opponent’s guard, then attacks by spitting acidic liquid strong enough to melt metal.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It uses its own body fluid to repair its apple. Strong Flapple that have won many battles have apples that are clay colored all over.",
+    "version": "Violet"
+   }
+  ],
+  "floette": [
+   {
+    "text": "This Pokémon draws forth what power is left in withered flowers to make them healthy again. It holds a red flower.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "This Pokémon uses red wavelengths of light to pour its own energy into flowers and draw forth their latent potential.",
+    "version": "Violet"
+   }
+  ],
+  "florges": [
+   {
+    "text": "This Pokémon creates an impressive flower garden in its territory. It draws forth the power of the red flowers around its neck.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "They say that flower gardens created by Florges are constantly showered with a power that can heal both body and spirit.",
+    "version": "Violet"
+   }
+  ],
+  "fomantis": [
+   {
+    "text": "Fomantis hates having its naps interrupted. It fires off beams using energy it gathers by bathing in the sun.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Many Trainers give their Fomantis their own flowerpots so they can sunbathe in peace and quiet.",
+    "version": "Violet"
+   }
+  ],
+  "frogadier": [
+   {
+    "text": "It excels at devising battle strategies that make use of the terrain, and it never misses its mark when throwing bubble-covered pebbles.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "The tips of its fingers and toes stick firmly to vertical surfaces. Frogadier can scale skyscrapers with ease.",
+    "version": "Violet"
+   }
+  ],
+  "gastly": [
+   {
+    "text": "It wraps its opponent in its gas-like body, slowly weakening its prey by poisoning it through the skin.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Its body is made of gas. Despite lacking substance, it can envelop an opponent of any size and cause suffocation.",
+    "version": "Violet"
+   }
+  ],
+  "gengar": [
+   {
+    "text": "To steal the life of its target, it slips into the prey’s shadow and silently waits for an opportunity.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Hiding in people's shadows at night, it absorbs their heat. The chill it causes makes the victims shake.",
+    "version": "Violet"
+   }
+  ],
+  "gloom": [
+   {
+    "text": "The fluid that oozes from its mouth isn’t drool. It is a nectar that is used to attract prey.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It secretes a sticky, drool-like nectar. Though sweet, it smells too repulsive to get very close.",
+    "version": "Violet"
+   }
+  ],
+  "greninja": [
+   {
+    "text": "The movement of air against the long tongue Greninja keeps wrapped around its neck allows it to sense enemies it can’t see.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It makes shuriken out of mucus excreted from its thighs. These shuriken can cut cleanly through steel cables.",
+    "version": "Violet"
+   }
+  ],
+  "jolteon": [
+   {
+    "text": "It concentrates the weak electric charges emitted by its cells and launches wicked lightning bolts.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "If agitated, it uses electricity to straighten out its fur and launch it in small bunches.",
+    "version": "Violet"
+   }
+  ],
+  "lycanroc": [
+   {
+    "text": "Lycanroc attacks its prey with its sharp claws and fangs. It loyally obeys the instructions of a Trainer it trusts.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It has a calm and collected demeanor. It swiftly closes in on its prey, then slices them with the rocks in its mane.",
+    "version": "Violet"
+   }
+  ],
+  "mankey": [
+   {
+    "text": "It lives in groups in the treetops. If it loses sight of its group, it becomes infuriated by its loneliness.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It is extremely quick to anger. It could be docile one moment, then thrashing away the next instant.",
+    "version": "Violet"
+   }
+  ],
+  "minior": [
+   {
+    "text": "This Pokémon is born in the ozone layer. It falls to the ground once the outer shell enclosing its core grows heavy.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It will react when touched or called to, but it’s unknown whether such responses indicate consciousness.",
+    "version": "Violet"
+   }
+  ],
+  "ninetales": [
+   {
+    "text": "Some legends claim that each of its nine tails has its own unique type of special mystical power.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It has nine long tails and fur that gleams gold. It is said to live for 1,000 years.",
+    "version": "Violet"
+   }
+  ],
+  "overqwil": [
+   {
+    "text": "Overqwil’s poisonous spikes will reflexively react even while Overqwil sleeps, stabbing any moving thing that approaches.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It’s ferocious and has a short temper. The ends of its spikes are barbed, and they can’t be easily removed once they’ve punctured something.",
+    "version": "Violet"
+   }
+  ],
+  "pichu": [
+   {
+    "text": "It is unskilled at storing electric power. Any kind of shock causes it to discharge energy spontaneously.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Despite this Pokémon's cute appearance, those who want to live with one should prepare to be on the receiving end of its electric jolts.",
+    "version": "Violet"
+   }
+  ],
+  "pikachu": [
+   {
+    "text": "When it is angered, it immediately discharges the energy stored in the pouches in its cheeks.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "When several of these Pokémon gather, their electricity can build and cause lightning storms.",
+    "version": "Violet"
+   }
+  ],
+  "porygon": [
+   {
+    "text": "It is an artificial Pokémon. Since it doesn’t breathe, people are excited by its potential to be useful in any environment.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Porygon is an artificial Pokémon created using advanced scientific means. It can move freely through cyberspace.",
+    "version": "Violet"
+   }
+  ],
+  "qwilfish": [
+   {
+    "text": "Be cautious if this Pokémon starts sucking in water—it will soon attack by scattering the toxic spikes that grow all over its body.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Experienced fishers say they try to catch Qwilfish in the brief moment that these Pokémon become defenseless just after launching poisonous spikes.",
+    "version": "Violet"
+   }
+  ],
+  "raichu": [
+   {
+    "text": "Its tail discharges electricity into the ground, protecting it from getting shocked.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "If the electric pouches in its cheeks become fully charged, both ears will stand straight up.",
+    "version": "Violet"
+   }
+  ],
+  "rhydon": [
+   {
+    "text": "The horn of a Rhydon is powerful enough to crush raw diamonds. These Pokémon polish their horns by bashing them together.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It evolved to walk using only its hind legs, which has allowed it to expand its habitat even onto steep mountains.",
+    "version": "Violet"
+   }
+  ],
+  "rhyhorn": [
+   {
+    "text": "Rhyhorn claims an area with over a six mile radius as its territory. It apparently forgets where this territory is when running, however.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Once it starts running, it won’t stop—even if it crashes through boulders. This disposition is what’s caused its habitat to expand.",
+    "version": "Violet"
+   }
+  ],
+  "rhyperior": [
+   {
+    "text": "This Pokémon's sturdy carapace protects it from volcanic eruptions. It shoots round rocks from the holes in its hands.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "A Rhyperior's brain is smaller than a Rhydon's, but the Rhyperior is stronger because it spends more energy on battling and less on brainpower.",
+    "version": "Violet"
+   }
+  ],
+  "rockruff": [
+   {
+    "text": "This Pokémon is very friendly when it's young. Its disposition becomes vicious once it matures, but it never forgets the kindness of its master.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "This Pokémon travels in a pack with others until it grows up. When its mood turns sour, it starts striking the ground with the rocks on its neck.",
+    "version": "Violet"
+   }
+  ],
+  "smeargle": [
+   {
+    "text": "Once a Smeargle reaches adulthood, it will have other members of its species leave paw prints on its back.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "The color of the mysterious fluid secreted from the tip of the tail is predetermined for each Smeargle.",
+    "version": "Violet"
+   }
+  ],
+  "snover": [
+   {
+    "text": "During cold seasons, it migrates to the mountain’s lower reaches. It returns to the snow-covered summit in the spring.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Seemingly curious about people, they gather around footsteps they find on snowy mountains.",
+    "version": "Violet"
+   }
+  ],
+  "squirtle": [
+   {
+    "text": "After birth, its back swells and hardens into a shell. It sprays a potent foam from its mouth.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Its shell is soft immediately after it is born. In no time at all, the shell becomes so resilient that a prodding finger will bounce right off it.",
+    "version": "Violet"
+   }
+  ],
+  "sylveon": [
+   {
+    "text": "This Pokémon uses its ribbonlike feelers to send a soothing aura into its opponents, erasing their hostility.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Sylveon cuts an elegant figure as it dances lightly around, feelers fluttering, but its piercing moves aim straight for its opponents' weak spots.",
+    "version": "Violet"
+   }
+  ],
+  "tyrogue": [
+   {
+    "text": "This earnest Pokémon battles all sorts of opponents, searching for the fighting style that suits it best.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Its intense desire to become stronger and stronger drives it to recklessly train its body and challenge any opponent it can find to battle.",
+    "version": "Violet"
+   }
+  ],
+  "ursaluna": [
+   {
+    "text": "It crossed the sea and drifted ashore in a new land . Surviving in this place led it to take on a unique appearance and gain special powers.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "This special Ursaluna can see in the dark with its left eye and protects itself with mud that is as hard as iron.",
+    "version": "Violet"
+   }
+  ],
+  "vaporeon": [
+   {
+    "text": "It lives close to water. Its long tail is ridged with a fin, which is often mistaken for a mermaid’s.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "Its cell composition is similar to water molecules. As a result, it can't be seen when it melts away into water.",
+    "version": "Violet"
+   }
+  ],
+  "vileplume": [
+   {
+    "text": "The bud bursts into bloom with a bang. It then starts scattering allergenic, poisonous pollen.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It fiendishly scatters allergenic pollen from its petals, which are the largest in the world.",
+    "version": "Violet"
+   }
+  ],
+  "vivillon": [
+   {
+    "text": "The patterns on this Pokémon depend on the climate and topography of the land it was born in. This form is from frigid lands.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "This Pokémon was born in frigid lands. It scatters colorful, toxic scales from its wings during battle.",
+    "version": "Violet"
+   }
+  ],
+  "vulpix": [
+   {
+    "text": "If it is attacked by an enemy that is stronger than itself, it feigns injury to fool the enemy and escapes.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "As its body grows larger, its six warm tails become more beautiful, with a more luxurious coat of fur.",
+    "version": "Violet"
+   }
+  ],
+  "wartortle": [
+   {
+    "text": "Wartortle’s long, furry tail is a symbol of longevity, so this Pokémon is quite popular among older people.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "It often hides in water to stalk unwary prey. While swimming quickly, it moves its ears to maintain balance.",
+    "version": "Violet"
+   }
+  ],
+  "wooper": [
+   {
+    "text": "A transparent mucous membrane covers its body. Touching it bare-handed will cause a tingling numbness.",
+    "version": "Scarlet"
+   },
+   {
+    "text": "When it walks around on land, it coats its body with a slimy, poisonous film.",
+    "version": "Violet"
+   }
+  ]
+ }
+}

@@ -1,0 +1,185 @@
+{% if not_found %}
+  <p class="empty">
+    No move found for "{{ q }}".
+    Try another name.
+  </p>
+{% elif move %}
+  <article class="pokemon-card">
+    <div class="game-select-row game-fav-row{% if not move.games %} title-fav-row{% endif %}">
+      {% if move.games %}
+        <div class="game-buttons" id="game-buttons">
+          {% for g in move.games %}
+            <button class="game-btn"
+                    data-vg="{{ g.key }}"
+                    data-type="{{ g.type }}"
+                    data-power="{{ g.power|default_if_none:'' }}"
+                    data-accuracy="{{ g.accuracy|default_if_none:'' }}"
+                    data-pp="{{ g.pp|default_if_none:'' }}"
+                    data-tm="{{ g.tm }}"
+                    data-tm-cost="{{ g.tm_cost|default_if_none:'' }}"
+                    data-tm-where="{{ g.tm_where }}"
+                    data-tm-price="{{ g.tm_price }}"
+                    data-tm-sell="{{ g.tm_sell }}"
+                    onclick="setMoveGame(this)">
+              {{ g.label }}
+            </button>
+          {% endfor %}
+        </div>
+      {% else %}
+        <h2 class="pokemon-title">
+          {{ move.name|capfirst }}
+          {% if move.id %}<span class="dex">#{{ move.id }}</span>{% endif %}
+        </h2>
+      {% endif %}
+      {% include "pokedex/_fav_toggle.html" with cb_id="move-fav" fav_type="move" fav_id=move.id fav_name=move.name %}
+    </div>
+
+    {% if move.games %}
+    <h2 class="pokemon-title">
+      {{ move.name|capfirst }}
+      {% if move.id %}<span class="dex">#{{ move.id }}</span>{% endif %}
+    </h2>
+    {% endif %}
+    <div class="types">
+      {% if move.type %}
+        <span class="type-badge type-{{ move.type }}" id="move-type">{{ move.type|capfirst }}</span>
+      {% endif %}
+    </div>
+
+    <ul class="stats">
+      <li>
+        <span>Power</span>
+        <b id="move-power">{{ move.power|default_if_none:"—" }}</b>
+      </li>
+      <li>
+        <span>Accuracy</span>
+        <b id="move-accuracy">{% if move.accuracy is not None %}{{ move.accuracy }}%{% else %}—{% endif %}</b>
+      </li>
+      <li>
+        <span>PP</span>
+        <b id="move-pp">{{ move.pp|default_if_none:"—" }}</b>
+      </li>
+      <li>
+        <span>Move type</span>
+        <b class="mm-cat-{{ move.damage_class }}">{{ move.damage_class|capfirst|default:"—" }}</b>
+      </li>
+      <li>
+        <span>Priority</span>
+        <b>{% if move.priority > 0 %}+{{ move.priority }}{% else %}{{ move.priority|default_if_none:"0" }}{% endif %}</b>
+      </li>
+      <li id="move-tm-row" style="display:none">
+        <span>TM / HM</span>
+        <b id="move-tm"></b>
+      </li>
+    </ul>
+    <div class="move-tm-box" id="move-tm-box" style="display:none">
+      <h3>TM / HM details</h3>
+      <p class="move-tm-line" id="move-tm-price" style="display:none"></p>
+      <div class="move-tm-line" id="move-tm-loc"></div>
+      {% if move.tm_table %}
+      <details class="move-tm-all">
+        <summary>TM number in every game</summary>
+        <table class="gi-table">
+          <thead><tr><th>Game</th><th>Machine</th><th>Price</th></tr></thead>
+          <tbody>
+            {% for t in move.tm_table %}
+            <tr>
+              <td>{{ t.game }}</td>
+              <td>{{ t.tm }}</td>
+              <td>{% if t.price == "N/A" %}Not sold{% elif t.price %}{{ t.price }}{% elif t.cost %}₽{{ t.cost }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </details>
+      {% endif %}
+    </div>
+
+    {% if move.effect %}
+      <div class="move-effect-box">
+        <h3>Effect</h3>
+        <p class="move-effect">{{ move.effect }}</p>
+      </div>
+    {% endif %}
+
+    {% if move.learned_by %}
+      {% include "pokedex/_mon_table.html" with mons=move.learned_by title="Pokémon that learn this move" %}
+    {% endif %}
+  </article>
+  <script>
+    function setMoveGame(btn) {
+      if (window.pksPageMemory) pksPageMemory.set('game', btn.dataset.vg);
+      document
+        .querySelectorAll('#game-buttons .game-btn')
+        .forEach(function(b) {
+          b.classList.toggle('active', b === btn);
+        });
+      var d = btn.dataset;
+      var typeEl = document.getElementById('move-type');
+      if (typeEl && d.type) {
+        typeEl.className = 'type-badge type-' + d.type;
+        typeEl.textContent =
+          d.type.charAt(0).toUpperCase() + d.type.slice(1);
+      }
+      document.getElementById('move-power').textContent =
+        d.power !== '' ? d.power : '—';
+      document.getElementById('move-accuracy').textContent =
+        d.accuracy !== '' ? d.accuracy + '%' : '—';
+      document.getElementById('move-pp').textContent =
+        d.pp !== '' ? d.pp : '—';
+      // The TM / HM / TR that teaches this move in the selected game.
+      var tmRow = document.getElementById('move-tm-row');
+      var tmBox = document.getElementById('move-tm-box');
+      var price = document.getElementById('move-tm-price');
+      var loc = document.getElementById('move-tm-loc');
+      var notAvailable = function(v) { return !v || /^n\/a$/i.test(v); };
+      loc.textContent = '';
+      if (d.tm) {
+        document.getElementById('move-tm').textContent = d.tm;
+        // What it costs: Bulbapedia's purchase price (coins, LP...), else
+        // the shop price PokeAPI has. "N/A" means it cannot be bought.
+        var buy = d.tmPrice || (d.tmCost ? '₽' + d.tmCost : '');
+        var parts = [];
+        if (buy) {
+          parts.push('Purchase price: ' +
+            (notAvailable(buy) ? 'not sold in shops' : buy));
+        }
+        if (!notAvailable(d.tmSell)) parts.push('Sell price: ' + d.tmSell);
+        price.textContent = parts.join(' · ');
+        price.style.display = parts.length ? '' : 'none';
+        // Where it is found: one line per place.
+        var lines = (d.tmWhere || '').split('\n').filter(Boolean);
+        if (lines.length) {
+          var head = document.createElement('strong');
+          head.textContent = 'Where to find it';
+          var ul = document.createElement('ul');
+          ul.className = 'gi-list';
+          lines.forEach(function(line) {
+            var li = document.createElement('li');
+            var span = document.createElement('span');
+            span.textContent = line;
+            li.appendChild(span);
+            ul.appendChild(li);
+          });
+          loc.appendChild(head);
+          loc.appendChild(ul);
+        } else {
+          loc.textContent =
+            'No location is listed for ' + d.tm + ' in this game.';
+        }
+        tmRow.style.display = '';
+        tmBox.style.display = '';
+      } else {
+        tmRow.style.display = 'none';
+        tmBox.style.display = 'none';
+      }
+    }
+    var moveName = "{{ move.name|escapejs }}".replace(/-/g, ' ');
+    // Default to the most recent game the move is in.
+    (function() {
+      var btns = document.querySelectorAll('#game-buttons .game-btn');
+      var pick = window.pksPageMemory ? pksPageMemory.pick(btns, 'game') : btns[0];
+      if (pick) setMoveGame(pick);
+    })();
+  </script>
+{% endif %}

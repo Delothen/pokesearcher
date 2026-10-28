@@ -1,0 +1,76 @@
+{# One side (side = "a" or "b") of a move comparison. Every id is prefixed cmp-<side>- so two cards can share a page. Each section is its own row so the two sides line up. #}
+<article class="pokemon-card cmp-card" id="cmp-{{ side }}-card"
+         style="--cmp-rows: 4">
+  <section class="cmp-section cmp-controls">
+    {% with favcb="move-fav-"|add:side %}
+    {% if m.games %}
+    <div class="game-select-row">
+      <div class="game-buttons" id="cmp-{{ side }}-games">
+        {% for g in m.games %}
+        <button type="button" class="game-btn"
+                data-vg="{{ g.key }}"
+                data-type="{{ g.type }}"
+                data-power="{{ g.power|default_if_none:'' }}"
+                data-accuracy="{{ g.accuracy|default_if_none:'' }}"
+                data-pp="{{ g.pp|default_if_none:'' }}"
+                onclick="setCmpMoveGame('{{ side }}', this)">{{ g.label }}</button>
+        {% endfor %}
+      </div>
+      <div class="toggle-row">
+        {% include "pokedex/_fav_toggle.html" with cb_id=favcb fav_type="move" fav_id=m.id fav_name=m.name %}
+      </div>
+    </div>
+    {% else %}
+    <div class="toggle-row">
+      {% include "pokedex/_fav_toggle.html" with cb_id=favcb fav_type="move" fav_id=m.id fav_name=m.name %}
+    </div>
+    {% endif %}
+    {% endwith %}
+  </section>
+
+  <section class="cmp-section cmp-head">
+    <div class="pokemon-top">
+      <div>
+        <h2>{{ m.name|capfirst }}
+          <span class="dex">#{{ m.id }}</span>
+        </h2>
+        <div class="types">
+          {% if m.type %}
+          <span class="type-badge type-{{ m.type }}" id="cmp-{{ side }}-move-type">{{ m.type|capfirst }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="cmp-section cmp-stats">
+    <h3>Stats</h3>
+    <ul class="stats">
+      <li>
+        <span>Power</span>
+        <b id="cmp-{{ side }}-power">{{ m.power|default_if_none:"—" }}</b>
+      </li>
+      <li>
+        <span>Accuracy</span>
+        <b id="cmp-{{ side }}-accuracy">{% if m.accuracy is not None %}{{ m.accuracy }}%{% else %}—{% endif %}</b>
+      </li>
+      <li>
+        <span>PP</span>
+        <b id="cmp-{{ side }}-pp">{{ m.pp|default_if_none:"—" }}</b>
+      </li>
+      <li>
+        <span>Move type</span>
+        <b class="mm-cat-{{ m.damage_class }}">{{ m.damage_class|capfirst|default:"—" }}</b>
+      </li>
+      <li>
+        <span>Priority</span>
+        <b>{% if m.priority > 0 %}+{{ m.priority }}{% else %}{{ m.priority|default_if_none:"0" }}{% endif %}</b>
+      </li>
+    </ul>
+  </section>
+
+  <section class="cmp-section move-effect-box">
+    <h3>Effect</h3>
+    <p class="move-effect">{{ m.effect|default:"No effect text available." }}</p>
+  </section>
+</article>
